@@ -5,6 +5,7 @@ import com.github.javaparser.ParserConfiguration;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.BodyDeclaration;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
+import com.github.javaparser.resolution.declarations.ResolvedMethodDeclaration;
 import com.github.javaparser.resolution.declarations.ResolvedReferenceTypeDeclaration;
 import com.github.javaparser.symbolsolver.JavaSymbolSolver;
 import com.github.javaparser.symbolsolver.reflectionmodel.ReflectionInterfaceDeclaration;
@@ -34,12 +35,14 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.github.javaparser.utils.CodeGenerationUtils.f;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
+import static java.util.Comparator.comparing;
 import static java.util.stream.Collectors.toList;
 
 /**
@@ -53,8 +56,7 @@ import static java.util.stream.Collectors.toList;
 public class InterfacerPluginMojo extends AbstractMojo {
 
   /** Package aggregating interfaces that should be scanned through entities. */
-  @Parameter(required = false)
-  String interfacePackage;
+  @Parameter String interfacePackage;
 
   /** Location for the source files with added trace lines. */
   @Parameter(required = true)
@@ -120,67 +122,72 @@ public class InterfacerPluginMojo extends AbstractMojo {
                       type.resolve(),
                       null);
 
-              type.getMethods()
+              type.resolve()
+                  .getAllMethods()
                   .forEach(
-                      methodDeclaration -> {
-                        if (methodDeclaration.getParameters().size() == 0
-                            && methodDeclaration.getNameAsString().startsWith("get")) {
+                      method -> {
+                        ResolvedMethodDeclaration methodDeclaration = method.getDeclaration();
+                        if (methodDeclaration.getNumberOfParams() == 0
+                            && methodDeclaration.getName().startsWith("get")
+                            && !methodDeclaration.getName().equals("getClass")) {
                           getLog().info("Adding method: " + methodDeclaration);
                           ifcResolve.methods.add(
                               new TypeWithName(
-                                  methodDeclaration.getNameAsString(),
-                                  methodDeclaration.getType().resolve(),
+                                  methodDeclaration.getName(),
+                                  methodDeclaration.getReturnType(),
                                   null));
                         }
                       });
+
+              type.getMethods().forEach(methodDeclaration -> {});
 
               return ifcResolve;
             })
         .orElse(null);
   }
 
-  private List<IfcResolve> scanInterfacesFromClasspath(ClassLoader classLoader)
-      throws MojoExecutionException {
+  private List<IfcResolve> scanInterfacesFromClasspath(ClassLoader classLoader) {
     if (interfacePackage == null) {
       return emptyList();
     }
 
     String[] interfacePackages = interfacePackage.split(",");
-    Reflections reflections =
-        new Reflections(
-            new ConfigurationBuilder()
-                .addClassLoader(classLoader)
-                .setUrls(
-                    asList(interfacePackages).stream()
-                        .flatMap(ifcPack -> ClasspathHelper.forPackage(ifcPack).stream())
-                        .collect(toList()))
-                .setScanners(new SubTypesScanner(false))
-                .filterInputsBy(new FilterBuilder().includePackage(interfacePackages)));
+    Reflections reflections = createReflections(classLoader, interfacePackages);
 
     List<IfcResolve> ifcs = new ArrayList<>();
 
-    reflections
-        .getSubTypesOf(Object.class)
-        .forEach(
-            type -> {
-              getLog().info("Processing type: " + type.getCanonicalName());
-              if (type.isInterface()) {
-                getLog().info("Adding interface: " + type.getName());
-                IfcResolve ifcResolve = new IfcResolve(type.getName(), null, type);
-
-                for (Method method : type.getMethods()) {
-                  if (method.getParameterCount() == 0 && method.getName().startsWith("get")) {
-                    getLog().info("Adding method: " + method.toString());
-                    ifcResolve.methods.add(
-                        new TypeWithName(method.getName(), null, method.getReturnType()));
-                  }
-                }
-
-                ifcs.add(ifcResolve);
-              }
-            });
+    reflections.getSubTypesOf(Object.class).forEach(type -> processClassFromClasspath(ifcs, type));
 
     return ifcs;
+  }
+
+  private void processClassFromClasspath(List<IfcResolve> ifcs, Class<?> type) {
+    getLog().info("Processing type: " + type.getCanonicalName());
+    if (type.isInterface()) {
+      getLog().info("Adding interface: " + type.getName());
+      IfcResolve ifcResolve = new IfcResolve(type.getName(), null, type);
+
+      for (Method method : type.getMethods()) {
+        if (method.getParameterCount() == 0 && method.getName().startsWith("get")) {
+          getLog().info("Adding method: " + method.toString());
+          ifcResolve.methods.add(new TypeWithName(method.getName(), null, method.getReturnType()));
+        }
+      }
+
+      ifcs.add(ifcResolve);
+    }
+  }
+
+  private Reflections createReflections(ClassLoader classLoader, String[] interfacePackages) {
+    return new Reflections(
+        new ConfigurationBuilder()
+            .addClassLoader(classLoader)
+            .setUrls(
+                asList(interfacePackages).stream()
+                    .flatMap(ifcPack -> ClasspathHelper.forPackage(ifcPack).stream())
+                    .collect(toList()))
+            .setScanners(new SubTypesScanner(false))
+            .filterInputsBy(new FilterBuilder().includePackage(interfacePackages)));
   }
 
   private ClassLoader getCompileClassLoader() throws MojoExecutionException {
@@ -217,19 +224,16 @@ public class InterfacerPluginMojo extends AbstractMojo {
 
         ClassLoader classLoader = getCompileClassLoader();
 
-        CombinedTypeSolver combinedTypeSolver = new CombinedTypeSolver();
-        combinedTypeSolver.add(new ClassLoaderTypeSolver(classLoader) {});
-        combinedTypeSolver.add(new JavaParserTypeSolver(scanDirectory.toPath()));
-        combinedTypeSolver.add(new JavaParserTypeSolver(interfacesDirectory.toPath()));
-        JavaSymbolSolver symbolSolver = new JavaSymbolSolver(combinedTypeSolver);
-
+        CombinedTypeSolver combinedTypeSolver = createTypeSolver(scanDirectory, classLoader);
         ParserConfiguration parserConfiguration = new ParserConfiguration();
-        parserConfiguration.setSymbolResolver(symbolSolver);
+        parserConfiguration.setSymbolResolver(new JavaSymbolSolver(combinedTypeSolver));
         final SourceRoot source = new SourceRoot(scanDirectory.toPath(), parserConfiguration);
 
         List<IfcResolve> ifcs = new ArrayList<>();
         ifcs.addAll(scanInterfacesFromClasspath(classLoader));
         ifcs.addAll(scanInterfacesFromSrc(parserConfiguration));
+        Comparator<IfcResolve> comparator = comparing(i -> -i.methods.size());
+        ifcs.sort(comparator);
 
         for (ParseResult<CompilationUnit> parseResult : source.tryToParse()) {
           // Only deal with files without parse errors
@@ -255,6 +259,14 @@ public class InterfacerPluginMojo extends AbstractMojo {
     } catch (IOException e) {
       throw new MojoExecutionException("Error reading from source directory", e);
     }
+  }
+
+  private CombinedTypeSolver createTypeSolver(File scanDirectory, ClassLoader classLoader) {
+    CombinedTypeSolver combinedTypeSolver = new CombinedTypeSolver();
+    combinedTypeSolver.add(new ClassLoaderTypeSolver(classLoader) {});
+    combinedTypeSolver.add(new JavaParserTypeSolver(scanDirectory.toPath()));
+    combinedTypeSolver.add(new JavaParserTypeSolver(interfacesDirectory.toPath()));
+    return combinedTypeSolver;
   }
 
   private boolean addInterfaces(
@@ -286,13 +298,18 @@ public class InterfacerPluginMojo extends AbstractMojo {
       AtomicBoolean modified,
       ClassOrInterfaceDeclaration declaration,
       IfcResolve ifc) {
-    boolean allMatch = true;
+    int matchingMethods = 0;
     for (TypeWithName methodDecl : ifc.methods) {
       boolean found =
           declaration.getMethodsBySignature(methodDecl.name).stream()
               .anyMatch(
                   method -> methodDecl.resolvedType.isAssignableBy(method.getType().resolve()));
-      allMatch = allMatch && found;
+      if (found) {
+        matchingMethods++;
+      } else {
+        getLog().info("Missing method " + methodDecl.name);
+        return;
+      }
     }
 
     getLog()
@@ -309,7 +326,7 @@ public class InterfacerPluginMojo extends AbstractMojo {
     boolean canBeAssignedTo =
         declaration.resolve().getAncestors().stream()
             .anyMatch(ancestor -> other.isAssignableBy(ancestor));
-    if (allMatch && !canBeAssignedTo) {
+    if (matchingMethods > 0 && !canBeAssignedTo) {
       getLog().info("Modifying the class!");
       declaration.addImplementedType(ifc.name);
       modified.set(true);

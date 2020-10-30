@@ -1,4 +1,5 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>pl.matsuo</groupId>
     <artifactId>interfacer-maven-plugin</artifactId>
@@ -182,7 +183,7 @@
 
     <licenses>
         <license>
-            <name> GNU Lesser General Public License, Version 3, 29 June 2007</name>
+            <name>GNU Lesser General Public License, Version 3, 29 June 2007</name>
             <url>http://www.gnu.org/licenses/lgpl-3.0.txt</url>
         </license>
     </licenses>
@@ -210,8 +211,8 @@
         <connection>scm:git:git@github.com:tunguski/interfacer-maven-plugin.git</connection>
         <developerConnection>scm:git:git@github.com:tunguski/interfacer-maven-plugin.git</developerConnection>
         <url>git@github.com:tunguski/interfacer-maven-plugin.git</url>
-      <tag>HEAD</tag>
-  </scm>
+        <tag>HEAD</tag>
+    </scm>
 
     <distributionManagement>
         <snapshotRepository>

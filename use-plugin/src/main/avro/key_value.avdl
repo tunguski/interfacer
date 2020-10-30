@@ -10,4 +10,8 @@ protocol KeyValue {
       string key;
       union {null, BasicKeyValue} value = null;
     }
+
+    record NoInterfacesObject {
+      string customValue;
+    }
 }
