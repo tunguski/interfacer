@@ -8,6 +8,7 @@ import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.resolution.declarations.ResolvedMethodDeclaration;
 import com.github.javaparser.resolution.declarations.ResolvedReferenceTypeDeclaration;
 import com.github.javaparser.symbolsolver.JavaSymbolSolver;
+import com.github.javaparser.symbolsolver.reflectionmodel.ReflectionClassDeclaration;
 import com.github.javaparser.symbolsolver.reflectionmodel.ReflectionInterfaceDeclaration;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.ClassLoaderTypeSolver;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.CombinedTypeSolver;
@@ -40,7 +41,6 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.github.javaparser.utils.CodeGenerationUtils.f;
-import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.Comparator.comparing;
 import static java.util.stream.Collectors.toList;
@@ -162,7 +162,7 @@ public class InterfacerPluginMojo extends AbstractMojo {
   }
 
   private void processClassFromClasspath(List<IfcResolve> ifcs, Class<?> type) {
-    getLog().info("Processing type: " + type.getCanonicalName());
+    getLog().info("Processing classpath type: " + type.getCanonicalName());
     if (type.isInterface()) {
       getLog().info("Adding interface: " + type.getName());
       IfcResolve ifcResolve = new IfcResolve(type.getName(), null, type);
@@ -182,10 +182,7 @@ public class InterfacerPluginMojo extends AbstractMojo {
     return new Reflections(
         new ConfigurationBuilder()
             .addClassLoader(classLoader)
-            .setUrls(
-                asList(interfacePackages).stream()
-                    .flatMap(ifcPack -> ClasspathHelper.forPackage(ifcPack).stream())
-                    .collect(toList()))
+            .setUrls(ClasspathHelper.forClassLoader(classLoader))
             .setScanners(new SubTypesScanner(false))
             .filterInputsBy(new FilterBuilder().includePackage(interfacePackages)));
   }
@@ -199,7 +196,7 @@ public class InterfacerPluginMojo extends AbstractMojo {
               .filter(name -> name.endsWith(".jar"))
               .map(this::toUrl)
               .collect(toList());
-      jars.forEach(element -> getLog().info("Processing entry: " + element));
+      jars.forEach(element -> getLog().info("Compile classloader entry: " + element));
 
       ClassLoader classLoader = new URLClassLoader(jars.toArray(new URL[0]));
       return classLoader;
@@ -303,7 +300,21 @@ public class InterfacerPluginMojo extends AbstractMojo {
       boolean found =
           declaration.getMethodsBySignature(methodDecl.name).stream()
               .anyMatch(
-                  method -> methodDecl.resolvedType.isAssignableBy(method.getType().resolve()));
+                  method -> {
+                    if (methodDecl.resolvedType != null) {
+                      return methodDecl.resolvedType.isAssignableBy(method.getType().resolve());
+                    } else {
+                      ResolvedReferenceTypeDeclaration resolvedReferenceTypeDeclaration =
+                          methodDecl.clazz.isInterface()
+                              ? new ReflectionInterfaceDeclaration(
+                                  methodDecl.clazz, combinedTypeSolver)
+                              : new ReflectionClassDeclaration(
+                                  methodDecl.clazz, combinedTypeSolver);
+
+                      return resolvedReferenceTypeDeclaration.isAssignableBy(
+                          method.getType().resolve());
+                    }
+                  });
       if (found) {
         matchingMethods++;
       } else {

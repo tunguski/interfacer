@@ -1,0 +1,40 @@
+@namespace("pl.matsuo.interfacer.avro")
+protocol KeyValue {
+
+    record BasicKeyValue {
+      string key;
+      union {null, string} value = null;
+    }
+
+    record KeyValueReference {
+      string key;
+      union {null, BasicKeyValue} value = null;
+    }
+
+    record NoInterfacesObject {
+      string customValue;
+    }
+
+    record NamedRecord {
+      string name;
+    }
+
+    record GenericString {
+      string singleton;
+      @java-class("java.util.ArrayList") array<string> list;
+    }
+
+    enum Shape {
+      SQUARE, TRIANGLE, CIRCLE, OVAL
+    }
+
+    record GenericShape {
+      Shape singleton;
+      @java-class("java.util.ArrayList") array<Shape> list;
+    }
+
+    record GenericDate {
+      date singleton;
+      @java-class("java.util.ArrayList") array<date> list;
+    }
+}
