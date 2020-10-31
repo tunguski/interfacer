@@ -1,4 +1,4 @@
-package pl.matsuo.interfacer;
+package pl.matsuo.interfacer.maven;
 
 import org.apache.maven.plugin.logging.Log;
 

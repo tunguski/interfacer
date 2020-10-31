@@ -1,0 +1,39 @@
+plugins {
+    id 'idea'
+    id 'groovy'
+    id 'java-gradle-plugin'
+    id 'maven-publish'
+}
+
+group = 'pl.matsuo'
+version = '0.0.1-SNAPSHOT'
+
+idea {
+    module {
+        downloadJavadoc = true
+        downloadSources = true
+    }
+}
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+    jcenter()
+}
+
+dependencies {
+    implementation 'pl.matsuo:interfacer-maven-plugin:1.0-SNAPSHOT'
+
+    testImplementation('org.spockframework:spock-core:1.3-groovy-2.5') {
+        exclude module: 'groovy-all'
+    }
+}
+
+gradlePlugin {
+    plugins {
+        interfacer {
+            id = 'pl.matsuo.interfacer'
+            implementationClass = 'pl.matsuo.interfacer.gradle.InterfacerPlugin'
+        }
+    }
+}

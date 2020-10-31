@@ -1,4 +1,4 @@
-package pl.matsuo.interfacer;
+package pl.matsuo.interfacer.core;
 
 import com.github.javaparser.resolution.types.ResolvedType;
 
