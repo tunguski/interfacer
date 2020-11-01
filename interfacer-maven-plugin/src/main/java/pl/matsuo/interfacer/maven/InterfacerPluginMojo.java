@@ -18,18 +18,18 @@ import java.io.File;
 @Mojo(
     name = "add-interfaces",
     defaultPhase = LifecyclePhase.PROCESS_SOURCES,
-    requiresDependencyResolution = ResolutionScope.COMPILE)
+    requiresDependencyResolution = ResolutionScope.RUNTIME)
 public class InterfacerPluginMojo extends AbstractMojo {
 
   /** Package aggregating interfaces that should be scanned through entities. */
   @Parameter String interfacePackage;
 
   /** Location for the source files with added trace lines. */
-  @Parameter(required = true)
+  @Parameter(defaultValue = "${project.build.sourceDirectory}")
   File interfacesDirectory;
 
   /** Location where the modified source files should be saved. */
-  @Parameter(required = true, defaultValue = "${project.build.directory}/generated-sources/avro")
+  @Parameter(defaultValue = "${project.build.directory}/generated-sources/avro")
   File scanDirectory;
 
   /** The current Maven project. */
@@ -46,7 +46,7 @@ public class InterfacerPluginMojo extends AbstractMojo {
               scanDirectory,
               interfacesDirectory,
               interfacePackage,
-              project.getCompileClasspathElements());
+              project.getRuntimeClasspathElements());
     } catch (Exception e) {
       throw new MojoExecutionException("Error occurred", e);
     }

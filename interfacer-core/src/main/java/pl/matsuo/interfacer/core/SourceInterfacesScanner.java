@@ -78,11 +78,7 @@ public class SourceInterfacesScanner {
                             && methodDeclaration.getName().startsWith("get")
                             && !methodDeclaration.getName().equals("getClass")) {
                           log.accept("Adding method: " + methodDeclaration);
-                          ifcResolve.methods.add(
-                              new TypeWithName(
-                                  methodDeclaration.getName(),
-                                  methodDeclaration.getReturnType(),
-                                  null));
+                          ifcResolve.methods.add(new TypeWithName(method));
                         }
                       });
 

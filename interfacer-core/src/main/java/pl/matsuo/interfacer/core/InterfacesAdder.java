@@ -8,12 +8,10 @@ import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.github.javaparser.resolution.declarations.ResolvedReferenceTypeDeclaration;
 import com.github.javaparser.symbolsolver.JavaSymbolSolver;
-import com.github.javaparser.symbolsolver.reflectionmodel.ReflectionClassDeclaration;
 import com.github.javaparser.symbolsolver.reflectionmodel.ReflectionInterfaceDeclaration;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.ClassLoaderTypeSolver;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.CombinedTypeSolver;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.JavaParserTypeSolver;
-import com.github.javaparser.utils.Log;
 import com.github.javaparser.utils.SourceRoot;
 import lombok.NonNull;
 
@@ -27,7 +25,6 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
-import static com.github.javaparser.utils.CodeGenerationUtils.f;
 import static java.util.Comparator.comparing;
 import static pl.matsuo.interfacer.core.CollectionUtil.anyMatch;
 import static pl.matsuo.interfacer.core.CollectionUtil.filterMap;
@@ -89,10 +86,6 @@ public class InterfacesAdder {
                 .getResult()
                 .ifPresent(
                     cu -> {
-                      // Make the plugin a little noisier
-                      cu.getStorage()
-                          .ifPresent(
-                              storage -> Log.info(f("Processing %s...", storage.getFileName())));
                       // Do the actual logic
                       boolean modifiedState = addInterfaces(cu, ifcs, combinedTypeSolver);
                       modified.set(modified.get() || modifiedState);
@@ -152,9 +145,6 @@ public class InterfacesAdder {
     List<MethodDeclaration> declarations =
         findMethodDeclarationsForInterface(combinedTypeSolver, declaration, ifc);
 
-    log.accept(
-        "Processing declaration " + declaration.getFullyQualifiedName() + " with ifc " + ifc.name);
-
     ResolvedReferenceTypeDeclaration other =
         ifc.resolve != null
             ? ifc.resolve
@@ -172,7 +162,8 @@ public class InterfacesAdder {
               }
             });
     if (declarations.size() == ifc.methods.size() && !canBeAssignedTo) {
-      log.accept("Modifying the class!");
+      log.accept(
+          "Modifying the class: " + declaration.getFullyQualifiedName() + " with ifc " + ifc.name);
       // ClassOrInterfaceType type = getInterfaceType(ifc, declarations);
       declaration.addImplementedType(ifc.name);
       modified.set(true);
@@ -203,22 +194,8 @@ public class InterfacesAdder {
             ifc.methods,
             methodDecl ->
                 findFirst(
-                    declaration.getMethodsBySignature(methodDecl.name),
-                    method -> {
-                      if (methodDecl.resolvedType != null) {
-                        return methodDecl.resolvedType.isAssignableBy(method.getType().resolve());
-                      } else {
-                        ResolvedReferenceTypeDeclaration resolvedReferenceTypeDeclaration =
-                            methodDecl.clazz.isInterface()
-                                ? new ReflectionInterfaceDeclaration(
-                                    methodDecl.clazz, combinedTypeSolver)
-                                : new ReflectionClassDeclaration(
-                                    methodDecl.clazz, combinedTypeSolver);
-
-                        return resolvedReferenceTypeDeclaration.isAssignableBy(
-                            method.getType().resolve());
-                      }
-                    }));
+                    declaration.getMethodsBySignature(methodDecl.getName()),
+                    method -> methodDecl.matches(method, combinedTypeSolver)));
     return filterMap(methodDeclarations, Optional::isPresent, Optional::get);
   }
 }

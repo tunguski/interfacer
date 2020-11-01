@@ -100,3 +100,20 @@ interfacer {
     scanDirectory = file(path_to_generated_classes_dir)
 }
 ```
+
+## Development and publishing
+
+**Maven**
+
+```
+mvn clean
+mvn -P release release:prepare
+mvn -P release release:perform
+```
+
+**Gradle**
+
+```
+cd interfacer-gradle-plugin/
+./gradlew publishPlugins
+```

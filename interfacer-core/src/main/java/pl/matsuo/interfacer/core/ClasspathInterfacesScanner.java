@@ -16,6 +16,7 @@ import java.util.function.Consumer;
 
 import static java.util.Collections.emptyList;
 import static pl.matsuo.interfacer.core.CollectionUtil.filterMap;
+import static pl.matsuo.interfacer.core.CollectionUtil.map;
 
 public class ClasspathInterfacesScanner {
 
@@ -49,7 +50,7 @@ public class ClasspathInterfacesScanner {
       for (Method method : type.getMethods()) {
         if (method.getParameterCount() == 0 && method.getName().startsWith("get")) {
           log.accept("Adding method: " + method.toString());
-          ifcResolve.methods.add(new TypeWithName(method.getName(), null, method.getReturnType()));
+          ifcResolve.methods.add(new TypeWithName(method));
         }
       }
 
@@ -69,8 +70,7 @@ public class ClasspathInterfacesScanner {
   }
 
   public ClassLoader getCompileClassLoader(List<String> compileClasspathElements) {
-    List<URL> jars =
-        filterMap(compileClasspathElements, name -> name.endsWith(".jar"), this::toUrl);
+    List<URL> jars = map(compileClasspathElements, this::toUrl);
     jars.forEach(element -> log.accept("Compile classloader entry: " + element));
 
     ClassLoader classLoader = new URLClassLoader(jars.toArray(new URL[0]));
