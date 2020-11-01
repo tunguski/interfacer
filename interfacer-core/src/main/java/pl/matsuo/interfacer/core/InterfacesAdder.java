@@ -8,7 +8,6 @@ import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.github.javaparser.resolution.declarations.ResolvedReferenceTypeDeclaration;
 import com.github.javaparser.symbolsolver.JavaSymbolSolver;
-import com.github.javaparser.symbolsolver.reflectionmodel.ReflectionInterfaceDeclaration;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.ClassLoaderTypeSolver;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.CombinedTypeSolver;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.JavaParserTypeSolver;
@@ -25,6 +24,8 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
+import static com.github.javaparser.symbolsolver.reflectionmodel.ReflectionFactory.typeDeclarationFor;
+import static java.util.Arrays.asList;
 import static java.util.Comparator.comparing;
 import static pl.matsuo.interfacer.core.CollectionUtil.anyMatch;
 import static pl.matsuo.interfacer.core.CollectionUtil.filterMap;
@@ -146,9 +147,7 @@ public class InterfacesAdder {
         findMethodDeclarationsForInterface(combinedTypeSolver, declaration, ifc);
 
     ResolvedReferenceTypeDeclaration other =
-        ifc.resolve != null
-            ? ifc.resolve
-            : new ReflectionInterfaceDeclaration(ifc.clazz, combinedTypeSolver);
+        ifc.resolve != null ? ifc.resolve : typeDeclarationFor(ifc.clazz, combinedTypeSolver);
 
     boolean canBeAssignedTo =
         anyMatch(
@@ -157,7 +156,7 @@ public class InterfacesAdder {
               try {
                 return other.isAssignableBy(ancestor);
               } catch (RuntimeException e) {
-                e.printStackTrace();
+                // e.printStackTrace();
                 return false;
               }
             });
@@ -189,13 +188,24 @@ public class InterfacesAdder {
       CombinedTypeSolver combinedTypeSolver,
       ClassOrInterfaceDeclaration declaration,
       IfcResolve ifc) {
+    log.accept("Check methods for " + ifc.name);
     List<Optional<MethodDeclaration>> methodDeclarations =
         map(
             ifc.methods,
-            methodDecl ->
-                findFirst(
-                    declaration.getMethodsBySignature(methodDecl.getName()),
-                    method -> methodDecl.matches(method, combinedTypeSolver)));
+            methodDecl -> {
+              String[] paramStringTypes = methodDecl.getParamStringTypes();
+              List<MethodDeclaration> methodsBySignature =
+                  declaration.getMethodsBySignature(methodDecl.getName(), paramStringTypes);
+              log.accept(
+                  "Check method "
+                      + methodDecl.getName()
+                      + " with params "
+                      + asList(methodDecl.getParamStringTypes())
+                      + " similar methods "
+                      + methodsBySignature);
+              return findFirst(
+                  methodsBySignature, method -> methodDecl.matches(method, combinedTypeSolver));
+            });
     return filterMap(methodDeclarations, Optional::isPresent, Optional::get);
   }
 }

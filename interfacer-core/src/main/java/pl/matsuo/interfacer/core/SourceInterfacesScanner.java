@@ -5,7 +5,6 @@ import com.github.javaparser.ParserConfiguration;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.BodyDeclaration;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
-import com.github.javaparser.resolution.declarations.ResolvedMethodDeclaration;
 import com.github.javaparser.utils.SourceRoot;
 
 import java.io.File;
@@ -73,11 +72,9 @@ public class SourceInterfacesScanner {
                   .getAllMethods()
                   .forEach(
                       method -> {
-                        ResolvedMethodDeclaration methodDeclaration = method.getDeclaration();
-                        if (methodDeclaration.getNumberOfParams() == 0
-                            && methodDeclaration.getName().startsWith("get")
-                            && !methodDeclaration.getName().equals("getClass")) {
-                          log.accept("Adding method: " + methodDeclaration);
+                        if (!method.declaringType().getPackageName().equals("java.lang")
+                            || !method.declaringType().getClassName().equals("Object")) {
+                          log.accept("Adding method: " + method.getName());
                           ifcResolve.methods.add(new TypeWithName(method));
                         }
                       });

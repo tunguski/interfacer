@@ -17,6 +17,7 @@ protocol KeyValue {
 
     record NamedRecord {
       string name;
+      string owner;
     }
 
     record GenericString {

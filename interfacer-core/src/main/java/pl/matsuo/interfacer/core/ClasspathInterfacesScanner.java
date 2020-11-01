@@ -48,10 +48,8 @@ public class ClasspathInterfacesScanner {
       IfcResolve ifcResolve = new IfcResolve(type.getName(), null, type);
 
       for (Method method : type.getMethods()) {
-        if (method.getParameterCount() == 0 && method.getName().startsWith("get")) {
-          log.accept("Adding method: " + method.toString());
-          ifcResolve.methods.add(new TypeWithName(method));
-        }
+        log.accept("Adding method: " + method.getName());
+        ifcResolve.methods.add(new TypeWithName(method));
       }
 
       return ifcResolve;
@@ -73,8 +71,7 @@ public class ClasspathInterfacesScanner {
     List<URL> jars = map(compileClasspathElements, this::toUrl);
     jars.forEach(element -> log.accept("Compile classloader entry: " + element));
 
-    ClassLoader classLoader = new URLClassLoader(jars.toArray(new URL[0]));
-    return classLoader;
+    return new URLClassLoader(jars.toArray(new URL[0]));
   }
 
   public URL toUrl(String name) {

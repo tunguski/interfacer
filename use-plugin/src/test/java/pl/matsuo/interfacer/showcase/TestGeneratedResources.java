@@ -25,6 +25,9 @@ public class TestGeneratedResources {
     assertFalse(IKeyValueProvider.class.isAssignableFrom(NoInterfacesObject.class));
 
     assertTrue(HasName.class.isAssignableFrom(NamedRecord.class));
+    assertTrue(MutableOwner.class.isAssignableFrom(NamedRecord.class));
+    assertTrue(MutableOwner2.class.isAssignableFrom(NamedRecord.class));
+    assertFalse(MutableOwner3.class.isAssignableFrom(NamedRecord.class));
 
     assertTrue(GenericInterface.class.isAssignableFrom(GenericString.class));
     assertTrue(GenericInterface.class.isAssignableFrom(GenericShape.class));
