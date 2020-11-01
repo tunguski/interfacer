@@ -3,15 +3,14 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
                              http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <groupId>pl.matsuo.interfacer</groupId>
     <artifactId>use-plugin</artifactId>
     <version>0.0.4-SNAPSHOT</version>
 
-    <properties>
-        <maven.compiler.source>1.8</maven.compiler.source>
-        <maven.compiler.target>1.8</maven.compiler.target>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    </properties>
+    <parent>
+        <artifactId>interfacer-parent</artifactId>
+        <groupId>pl.matsuo.interfacer</groupId>
+        <version>0.0.4-SNAPSHOT</version>
+    </parent>
 
     <build>
         <plugins>
