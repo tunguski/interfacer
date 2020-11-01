@@ -22,7 +22,7 @@ repositories {
 }
 
 dependencies {
-    implementation 'pl.matsuo.interfacer:interfacer-maven-plugin:1.0-SNAPSHOT'
+    implementation 'pl.matsuo.interfacer:interfacer-maven-plugin:0.0.4-SNAPSHOT'
 
     testImplementation('org.spockframework:spock-core:1.3-groovy-2.5') {
         exclude module: 'groovy-all'
