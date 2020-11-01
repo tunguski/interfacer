@@ -7,7 +7,6 @@ import com.github.javaparser.ast.body.BodyDeclaration;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.resolution.declarations.ResolvedMethodDeclaration;
 import com.github.javaparser.utils.SourceRoot;
-import org.apache.maven.plugin.MojoExecutionException;
 
 import java.io.File;
 import java.io.IOException;
@@ -24,8 +23,7 @@ public class SourceInterfacesScanner {
   }
 
   public List<IfcResolve> scanInterfacesFromSrc(
-      ParserConfiguration parserConfiguration, File interfacesDirectory)
-      throws MojoExecutionException {
+      ParserConfiguration parserConfiguration, File interfacesDirectory) {
     List<IfcResolve> ifcs = new ArrayList<>();
 
     final SourceRoot source = new SourceRoot(interfacesDirectory.toPath(), parserConfiguration);
@@ -48,7 +46,7 @@ public class SourceInterfacesScanner {
         }
       }
     } catch (IOException e) {
-      throw new MojoExecutionException("Error reading from source directory", e);
+      throw new RuntimeException("Error reading from source directory", e);
     }
 
     return ifcs;

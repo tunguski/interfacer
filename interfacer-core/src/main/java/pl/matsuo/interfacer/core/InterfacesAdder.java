@@ -16,7 +16,6 @@ import com.github.javaparser.symbolsolver.resolution.typesolvers.JavaParserTypeS
 import com.github.javaparser.utils.Log;
 import com.github.javaparser.utils.SourceRoot;
 import lombok.NonNull;
-import org.apache.maven.plugin.MojoExecutionException;
 
 import java.io.File;
 import java.io.IOException;
@@ -30,7 +29,10 @@ import java.util.function.Consumer;
 
 import static com.github.javaparser.utils.CodeGenerationUtils.f;
 import static java.util.Comparator.comparing;
-import static java.util.stream.Collectors.toList;
+import static pl.matsuo.interfacer.core.CollectionUtil.anyMatch;
+import static pl.matsuo.interfacer.core.CollectionUtil.filterMap;
+import static pl.matsuo.interfacer.core.CollectionUtil.findFirst;
+import static pl.matsuo.interfacer.core.CollectionUtil.map;
 
 public class InterfacesAdder {
 
@@ -44,8 +46,7 @@ public class InterfacesAdder {
       @NonNull File scanDirectory,
       File interfacesDirectory,
       String interfacePackage,
-      List<String> compileClasspathElements)
-      throws MojoExecutionException {
+      List<String> compileClasspathElements) {
 
     if (interfacesDirectory == null
         && (interfacePackage == null || compileClasspathElements == null)) {
@@ -105,7 +106,7 @@ public class InterfacesAdder {
         source.saveAll();
       }
     } catch (IOException e) {
-      throw new MojoExecutionException("Error reading from source directory", e);
+      throw new RuntimeException("Error reading from source directory", e);
     }
   }
 
@@ -160,16 +161,16 @@ public class InterfacesAdder {
             : new ReflectionInterfaceDeclaration(ifc.clazz, combinedTypeSolver);
 
     boolean canBeAssignedTo =
-        declaration.resolve().getAncestors().stream()
-            .anyMatch(
-                ancestor -> {
-                  try {
-                    return other.isAssignableBy(ancestor);
-                  } catch (RuntimeException e) {
-                    e.printStackTrace();
-                    return false;
-                  }
-                });
+        anyMatch(
+            declaration.resolve().getAncestors(),
+            ancestor -> {
+              try {
+                return other.isAssignableBy(ancestor);
+              } catch (RuntimeException e) {
+                e.printStackTrace();
+                return false;
+              }
+            });
     if (declarations.size() == ifc.methods.size() && !canBeAssignedTo) {
       log.accept("Modifying the class!");
       // ClassOrInterfaceType type = getInterfaceType(ifc, declarations);
@@ -197,30 +198,27 @@ public class InterfacesAdder {
       CombinedTypeSolver combinedTypeSolver,
       ClassOrInterfaceDeclaration declaration,
       IfcResolve ifc) {
-    return ifc.methods.stream()
-        .map(
+    List<Optional<MethodDeclaration>> methodDeclarations =
+        map(
+            ifc.methods,
             methodDecl ->
-                declaration.getMethodsBySignature(methodDecl.name).stream()
-                    .filter(
-                        method -> {
-                          if (methodDecl.resolvedType != null) {
-                            return methodDecl.resolvedType.isAssignableBy(
-                                method.getType().resolve());
-                          } else {
-                            ResolvedReferenceTypeDeclaration resolvedReferenceTypeDeclaration =
-                                methodDecl.clazz.isInterface()
-                                    ? new ReflectionInterfaceDeclaration(
-                                        methodDecl.clazz, combinedTypeSolver)
-                                    : new ReflectionClassDeclaration(
-                                        methodDecl.clazz, combinedTypeSolver);
+                findFirst(
+                    declaration.getMethodsBySignature(methodDecl.name),
+                    method -> {
+                      if (methodDecl.resolvedType != null) {
+                        return methodDecl.resolvedType.isAssignableBy(method.getType().resolve());
+                      } else {
+                        ResolvedReferenceTypeDeclaration resolvedReferenceTypeDeclaration =
+                            methodDecl.clazz.isInterface()
+                                ? new ReflectionInterfaceDeclaration(
+                                    methodDecl.clazz, combinedTypeSolver)
+                                : new ReflectionClassDeclaration(
+                                    methodDecl.clazz, combinedTypeSolver);
 
-                            return resolvedReferenceTypeDeclaration.isAssignableBy(
-                                method.getType().resolve());
-                          }
-                        })
-                    .findFirst())
-        .filter(Optional::isPresent)
-        .map(Optional::get)
-        .collect(toList());
+                        return resolvedReferenceTypeDeclaration.isAssignableBy(
+                            method.getType().resolve());
+                      }
+                    }));
+    return filterMap(methodDeclarations, Optional::isPresent, Optional::get);
   }
 }

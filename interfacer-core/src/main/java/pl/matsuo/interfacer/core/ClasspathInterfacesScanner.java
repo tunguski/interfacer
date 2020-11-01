@@ -12,11 +12,10 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.List;
-import java.util.Objects;
 import java.util.function.Consumer;
 
 import static java.util.Collections.emptyList;
-import static java.util.stream.Collectors.toList;
+import static pl.matsuo.interfacer.core.CollectionUtil.filterMap;
 
 public class ClasspathInterfacesScanner {
 
@@ -36,10 +35,7 @@ public class ClasspathInterfacesScanner {
     Reflections reflections = createReflections(classLoader, interfacePackages);
 
     List<IfcResolve> ifcs =
-        reflections.getSubTypesOf(Object.class).stream()
-            .map(this::processClassFromClasspath)
-            .filter(Objects::nonNull)
-            .collect(toList());
+        filterMap(reflections.getSubTypesOf(Object.class), this::processClassFromClasspath);
 
     return ifcs;
   }
@@ -74,10 +70,7 @@ public class ClasspathInterfacesScanner {
 
   public ClassLoader getCompileClassLoader(List<String> compileClasspathElements) {
     List<URL> jars =
-        compileClasspathElements.stream()
-            .filter(name -> name.endsWith(".jar"))
-            .map(this::toUrl)
-            .collect(toList());
+        filterMap(compileClasspathElements, name -> name.endsWith(".jar"), this::toUrl);
     jars.forEach(element -> log.accept("Compile classloader entry: " + element));
 
     ClassLoader classLoader = new URLClassLoader(jars.toArray(new URL[0]));

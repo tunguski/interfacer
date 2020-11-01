@@ -1,6 +1,5 @@
 package pl.matsuo.interfacer.maven;
 
-import org.apache.maven.artifact.DependencyResolutionRequiredException;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
@@ -48,8 +47,8 @@ public class InterfacerPluginMojo extends AbstractMojo {
               interfacesDirectory,
               interfacePackage,
               project.getCompileClasspathElements());
-    } catch (DependencyResolutionRequiredException e) {
-      throw new MojoExecutionException("DependencyResolutionRequiredException", e);
+    } catch (Exception e) {
+      throw new MojoExecutionException("Error occurred", e);
     }
   }
 }

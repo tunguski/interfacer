@@ -1,11 +1,11 @@
 package pl.matsuo.interfacer.core;
 
-import lombok.extern.log4j.Log4j;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.Assert;
 import org.junit.Test;
 import pl.matsuo.interfacer.showcase.GenericInterface;
 
-@Log4j
+@Slf4j
 public class TestInterfacesAdder {
 
   @Test
