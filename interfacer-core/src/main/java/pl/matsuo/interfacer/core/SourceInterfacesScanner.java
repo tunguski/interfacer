@@ -6,20 +6,15 @@ import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.BodyDeclaration;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.utils.SourceRoot;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Consumer;
 
+@Slf4j
 public class SourceInterfacesScanner {
-
-  private final Consumer<String> log;
-
-  public SourceInterfacesScanner(Consumer<String> log) {
-    this.log = log;
-  }
 
   public List<IfcResolve> scanInterfacesFromSrc(
       ParserConfiguration parserConfiguration, File interfacesDirectory) {
@@ -41,7 +36,7 @@ public class SourceInterfacesScanner {
                     }
                   });
         } else {
-          log.accept("Parse failure for " + parseResult.getProblems());
+          log.warn("Parse failure for " + parseResult.getProblems());
         }
       }
     } catch (IOException e) {
@@ -58,7 +53,7 @@ public class SourceInterfacesScanner {
         .filter(ClassOrInterfaceDeclaration::isInterface)
         .map(
             type -> {
-              log.accept("Adding interface: " + type.getNameAsString());
+              log.info("Adding interface: " + type.getNameAsString());
               IfcResolve ifcResolve =
                   new IfcResolve(
                       cu.getPackageDeclaration()
@@ -74,7 +69,7 @@ public class SourceInterfacesScanner {
                       method -> {
                         if (!method.declaringType().getPackageName().equals("java.lang")
                             || !method.declaringType().getClassName().equals("Object")) {
-                          log.accept("Adding method: " + method.getName());
+                          log.info("Adding method: " + method.getName());
                           ifcResolve.methods.add(new TypeWithName(method));
                         }
                       });

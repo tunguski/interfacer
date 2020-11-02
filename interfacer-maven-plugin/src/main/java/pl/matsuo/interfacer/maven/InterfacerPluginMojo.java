@@ -41,7 +41,7 @@ public class InterfacerPluginMojo extends AbstractMojo {
     JavaParserMavenUtils.makeJavaParserLogToMavenOutput(getLog());
 
     try {
-      new InterfacesAdder(getLog()::info)
+      new InterfacesAdder()
           .addInterfacesAllFiles(
               scanDirectory,
               interfacesDirectory,

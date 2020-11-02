@@ -1,5 +1,6 @@
 package pl.matsuo.interfacer.core;
 
+import lombok.extern.slf4j.Slf4j;
 import org.reflections.Reflections;
 import org.reflections.scanners.SubTypesScanner;
 import org.reflections.util.ClasspathHelper;
@@ -12,19 +13,13 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.List;
-import java.util.function.Consumer;
 
 import static java.util.Collections.emptyList;
 import static pl.matsuo.interfacer.core.CollectionUtil.filterMap;
 import static pl.matsuo.interfacer.core.CollectionUtil.map;
 
+@Slf4j
 public class ClasspathInterfacesScanner {
-
-  private final Consumer<String> log;
-
-  public ClasspathInterfacesScanner(Consumer<String> log) {
-    this.log = log;
-  }
 
   public List<IfcResolve> scanInterfacesFromClasspath(
       ClassLoader classLoader, String interfacePackage) {
@@ -42,13 +37,13 @@ public class ClasspathInterfacesScanner {
   }
 
   public IfcResolve processClassFromClasspath(Class<?> type) {
-    log.accept("Processing classpath type: " + type.getCanonicalName());
+    log.info("Processing classpath type: " + type.getCanonicalName());
     if (type.isInterface()) {
-      log.accept("Adding interface: " + type.getName());
+      log.info("Adding interface: " + type.getName());
       IfcResolve ifcResolve = new IfcResolve(type.getName(), null, type);
 
       for (Method method : type.getMethods()) {
-        log.accept("Adding method: " + method.getName());
+        log.info("Adding method: " + method.getName());
         ifcResolve.methods.add(new TypeWithName(method));
       }
 
@@ -67,14 +62,14 @@ public class ClasspathInterfacesScanner {
             .filterInputsBy(new FilterBuilder().includePackage(interfacePackages)));
   }
 
-  public ClassLoader getCompileClassLoader(List<String> compileClasspathElements) {
-    List<URL> jars = map(compileClasspathElements, this::toUrl);
-    jars.forEach(element -> log.accept("Compile classloader entry: " + element));
+  public static ClassLoader getCompileClassLoader(List<String> compileClasspathElements) {
+    List<URL> jars = map(compileClasspathElements, ClasspathInterfacesScanner::toUrl);
+    jars.forEach(element -> log.info("Compile classloader entry: " + element));
 
     return new URLClassLoader(jars.toArray(new URL[0]));
   }
 
-  public URL toUrl(String name) {
+  public static URL toUrl(String name) {
     try {
       return new File(name).toURI().toURL();
     } catch (MalformedURLException e) {
