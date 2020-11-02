@@ -28,7 +28,7 @@ class InterfacerPluginFunctionalTest extends Specification {
             
             dependencies {
                 implementation 'org.apache.avro:avro:1.10.0'
-                implementation 'pl.matsuo.interfacer:sample-interfaces:0.0.4'
+                implementation 'pl.matsuo.interfacer:sample-interfaces:0.0.5'
             }
         """
     }
