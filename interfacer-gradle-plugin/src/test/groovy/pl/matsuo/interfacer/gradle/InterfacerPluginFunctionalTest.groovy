@@ -83,7 +83,6 @@ class InterfacerPluginFunctionalTest extends Specification {
 
         then:
         testScannedClass.text.contains("pl.matsuo.interfacer.showcase.HasName, ifc.SampleInterface")
-        result.output.contains("Modifying the class!")
         result.task(":interfacer").outcome == SUCCESS
     }
 }

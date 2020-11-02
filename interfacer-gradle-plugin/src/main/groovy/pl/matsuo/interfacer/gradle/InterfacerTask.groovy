@@ -60,7 +60,7 @@ class InterfacerTask extends DefaultTask {
             List<String> files = project.configurations.compileClasspath.getIncoming().getFiles().toList().stream()
                     .collect { it.getPath().replaceAll("[\\\\]", "/") }
 
-            new InterfacesAdder({ msg -> println msg })
+            new InterfacesAdder()
                     .addInterfacesAllFiles(
                             scanDir,
                             source,
