@@ -22,6 +22,17 @@ public class CollectionUtil {
     return resultList;
   }
 
+  public static <F, T> List<T> flatMap(
+      Collection<? extends F> collection, Function<F, Collection<T>> mapper) {
+    List<T> resultList = new ArrayList<>(collection.size());
+
+    for (F element : collection) {
+      resultList.addAll(mapper.apply(element));
+    }
+
+    return resultList;
+  }
+
   public static <E> List<E> filter(Collection<E> collection, Predicate<E> condition) {
     List<E> resultList = new ArrayList<>(collection.size());
 

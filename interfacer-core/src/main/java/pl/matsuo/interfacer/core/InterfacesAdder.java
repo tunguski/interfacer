@@ -24,15 +24,17 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.github.javaparser.symbolsolver.reflectionmodel.ReflectionFactory.typeDeclarationFor;
 import static java.util.Arrays.asList;
+import static java.util.Collections.emptyList;
 import static java.util.Comparator.comparing;
 import static pl.matsuo.interfacer.core.CollectionUtil.anyMatch;
 import static pl.matsuo.interfacer.core.CollectionUtil.filterMap;
 import static pl.matsuo.interfacer.core.CollectionUtil.findFirst;
+import static pl.matsuo.interfacer.core.CollectionUtil.flatMap;
 import static pl.matsuo.interfacer.core.CollectionUtil.map;
+import static pl.matsuo.interfacer.core.Pair.pair;
 
 @Slf4j
 public class InterfacesAdder {
@@ -57,10 +59,8 @@ public class InterfacesAdder {
     log.info("Start processing");
 
     try {
-      AtomicBoolean modified = new AtomicBoolean(true);
-      while (modified.get()) {
-        modified.set(false);
-
+      List<Pair<IfcResolve, ClassOrInterfaceDeclaration>> allModifications = new ArrayList<>();
+      while (true) {
         ClassLoader classLoader =
             ClasspathInterfacesScanner.getCompileClassLoader(compileClasspathElements);
 
@@ -73,10 +73,16 @@ public class InterfacesAdder {
         List<IfcResolve> ifcs =
             scanInterfaces(interfacesDirectory, interfacePackage, classLoader, parserConfiguration);
 
-        processAllFiles(modified, combinedTypeSolver, source.tryToParse(), ifcs);
+        List<Pair<IfcResolve, ClassOrInterfaceDeclaration>> modifications =
+            processAllFiles(combinedTypeSolver, source.tryToParse(), ifcs);
+        allModifications.addAll(modifications);
 
         // save changes on disk
         source.saveAll();
+
+        if (modifications.isEmpty()) {
+          break;
+        }
       }
     } catch (IOException e) {
       throw new RuntimeException("Error reading from source directory", e);
@@ -117,28 +123,29 @@ public class InterfacesAdder {
     return ifcs;
   }
 
-  public void processAllFiles(
-      AtomicBoolean modified,
+  public List<Pair<IfcResolve, ClassOrInterfaceDeclaration>> processAllFiles(
       CombinedTypeSolver combinedTypeSolver,
       List<ParseResult<CompilationUnit>> parseResults,
       List<IfcResolve> ifcs) {
-    for (ParseResult<CompilationUnit> parseResult : parseResults) {
-      // Only deal with files without parse errors
-      if (parseResult.isSuccessful()) {
-        parseResult
-            .getResult()
-            .ifPresent(
-                cu -> {
-                  // Do the actual logic
-                  boolean modifiedState = addInterfaces(cu, ifcs, combinedTypeSolver);
-                  if (modifiedState) {
-                    modified.set(true);
-                  }
-                });
-      } else {
-        log.warn("Parse failure for " + parseResult.getProblems());
-      }
-    }
+
+    return flatMap(
+        parseResults,
+        parseResult -> {
+          // Only deal with files without parse errors
+          if (parseResult.isSuccessful()) {
+            return parseResult
+                .getResult()
+                .map(
+                    cu -> {
+                      // Do the actual logic
+                      return addInterfaces(cu, ifcs, combinedTypeSolver);
+                    })
+                .orElse(emptyList());
+          } else {
+            log.warn("Parse failure for " + parseResult.getProblems());
+            return emptyList();
+          }
+        });
   }
 
   public CombinedTypeSolver createTypeSolver(
@@ -150,13 +157,11 @@ public class InterfacesAdder {
     return combinedTypeSolver;
   }
 
-  public boolean addInterfaces(
+  public List<Pair<IfcResolve, ClassOrInterfaceDeclaration>> addInterfaces(
       CompilationUnit compilationUnit,
       List<IfcResolve> ifcs,
       CombinedTypeSolver combinedTypeSolver) {
-    AtomicBoolean modified = new AtomicBoolean();
-
-    compilationUnit
+    return compilationUnit
         .getPrimaryType()
         .map(
             primaryType ->
@@ -164,19 +169,16 @@ public class InterfacesAdder {
                     ? (ClassOrInterfaceDeclaration) primaryType
                     : null)
         .filter(declaration -> !declaration.isInterface())
-        .ifPresent(
+        .map(
             declaration ->
-                ifcs.forEach(
-                    ifc ->
-                        processDeclarationWithInterface(
-                            combinedTypeSolver, modified, declaration, ifc)));
-
-    return modified.get();
+                filterMap(
+                    ifcs,
+                    ifc -> processDeclarationWithInterface(combinedTypeSolver, declaration, ifc)))
+        .orElse(emptyList());
   }
 
-  public void processDeclarationWithInterface(
+  public Pair<IfcResolve, ClassOrInterfaceDeclaration> processDeclarationWithInterface(
       CombinedTypeSolver combinedTypeSolver,
-      AtomicBoolean modified,
       ClassOrInterfaceDeclaration declaration,
       IfcResolve ifc) {
 
@@ -202,8 +204,10 @@ public class InterfacesAdder {
           "Modifying the class: " + declaration.getFullyQualifiedName() + " with ifc " + ifc.name);
       // ClassOrInterfaceType type = getInterfaceType(ifc, declarations);
       declaration.addImplementedType(ifc.name);
-      modified.set(true);
+      return pair(ifc, declaration);
     }
+
+    return null;
   }
 
   public ClassOrInterfaceType getInterfaceType(
