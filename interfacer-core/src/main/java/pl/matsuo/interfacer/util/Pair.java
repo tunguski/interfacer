@@ -1,8 +1,10 @@
-package pl.matsuo.interfacer.core;
+package pl.matsuo.interfacer.util;
 
 import lombok.RequiredArgsConstructor;
+import lombok.ToString;
 
 @RequiredArgsConstructor
+@ToString
 public class Pair<E, F> {
 
   public final E key;

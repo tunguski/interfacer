@@ -5,36 +5,30 @@ import com.github.javaparser.ParseResult;
 import com.github.javaparser.ParserConfiguration;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
-import com.github.javaparser.ast.body.MethodDeclaration;
-import com.github.javaparser.ast.type.ClassOrInterfaceType;
-import com.github.javaparser.resolution.declarations.ResolvedReferenceTypeDeclaration;
 import com.github.javaparser.symbolsolver.JavaSymbolSolver;
+import com.github.javaparser.symbolsolver.model.resolution.TypeSolver;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.ClassLoaderTypeSolver;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.CombinedTypeSolver;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.JavaParserTypeSolver;
 import com.github.javaparser.utils.SourceRoot;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import pl.matsuo.interfacer.model.ifc.IfcResolve;
+import pl.matsuo.interfacer.util.Pair;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.lang.reflect.TypeVariable;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Optional;
 
-import static com.github.javaparser.symbolsolver.reflectionmodel.ReflectionFactory.typeDeclarationFor;
-import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.Comparator.comparing;
-import static pl.matsuo.interfacer.core.CollectionUtil.anyMatch;
-import static pl.matsuo.interfacer.core.CollectionUtil.filterMap;
-import static pl.matsuo.interfacer.core.CollectionUtil.findFirst;
-import static pl.matsuo.interfacer.core.CollectionUtil.flatMap;
-import static pl.matsuo.interfacer.core.CollectionUtil.map;
-import static pl.matsuo.interfacer.core.Pair.pair;
+import static pl.matsuo.interfacer.util.CollectionUtil.anyMatch;
+import static pl.matsuo.interfacer.util.CollectionUtil.filterMap;
+import static pl.matsuo.interfacer.util.CollectionUtil.flatMap;
+import static pl.matsuo.interfacer.util.Pair.pair;
 
 @Slf4j
 public class InterfacesAdder {
@@ -71,7 +65,12 @@ public class InterfacesAdder {
         final SourceRoot source = new SourceRoot(scanDirectory.toPath(), parserConfiguration);
 
         List<IfcResolve> ifcs =
-            scanInterfaces(interfacesDirectory, interfacePackage, classLoader, parserConfiguration);
+            scanInterfaces(
+                interfacesDirectory,
+                interfacePackage,
+                classLoader,
+                parserConfiguration,
+                combinedTypeSolver);
 
         List<Pair<IfcResolve, ClassOrInterfaceDeclaration>> modifications =
             processAllFiles(combinedTypeSolver, source.tryToParse(), ifcs);
@@ -110,21 +109,22 @@ public class InterfacesAdder {
       File interfacesDirectory,
       String interfacePackage,
       ClassLoader classLoader,
-      ParserConfiguration parserConfiguration) {
+      ParserConfiguration parserConfiguration,
+      TypeSolver typeSolver) {
     List<IfcResolve> ifcs = new ArrayList<>();
     ifcs.addAll(
         new ClasspathInterfacesScanner()
-            .scanInterfacesFromClasspath(classLoader, interfacePackage));
+            .scanInterfacesFromClasspath(classLoader, interfacePackage, typeSolver));
     ifcs.addAll(
         new SourceInterfacesScanner()
             .scanInterfacesFromSrc(parserConfiguration, interfacesDirectory));
-    Comparator<IfcResolve> comparator = comparing(i -> -i.methods.size());
+    Comparator<IfcResolve> comparator = comparing(i -> -i.getMethods().size());
     ifcs.sort(comparator);
     return ifcs;
   }
 
   public List<Pair<IfcResolve, ClassOrInterfaceDeclaration>> processAllFiles(
-      CombinedTypeSolver combinedTypeSolver,
+      TypeSolver typeSolver,
       List<ParseResult<CompilationUnit>> parseResults,
       List<IfcResolve> ifcs) {
 
@@ -138,7 +138,7 @@ public class InterfacesAdder {
                 .map(
                     cu -> {
                       // Do the actual logic
-                      return addInterfaces(cu, ifcs, combinedTypeSolver);
+                      return addInterfaces(cu, ifcs, typeSolver);
                     })
                 .orElse(emptyList());
           } else {
@@ -151,16 +151,14 @@ public class InterfacesAdder {
   public CombinedTypeSolver createTypeSolver(
       File scanDirectory, File interfacesDirectory, ClassLoader classLoader) {
     CombinedTypeSolver combinedTypeSolver = new CombinedTypeSolver();
-    combinedTypeSolver.add(new ClassLoaderTypeSolver(classLoader) {});
+    combinedTypeSolver.add(new ClassLoaderTypeSolver(classLoader));
     combinedTypeSolver.add(new JavaParserTypeSolver(scanDirectory.toPath()));
     combinedTypeSolver.add(new JavaParserTypeSolver(interfacesDirectory.toPath()));
     return combinedTypeSolver;
   }
 
   public List<Pair<IfcResolve, ClassOrInterfaceDeclaration>> addInterfaces(
-      CompilationUnit compilationUnit,
-      List<IfcResolve> ifcs,
-      CombinedTypeSolver combinedTypeSolver) {
+      CompilationUnit compilationUnit, List<IfcResolve> ifcs, TypeSolver typeSolver) {
     return compilationUnit
         .getPrimaryType()
         .map(
@@ -171,82 +169,38 @@ public class InterfacesAdder {
         .filter(declaration -> !declaration.isInterface())
         .map(
             declaration ->
-                filterMap(
-                    ifcs,
-                    ifc -> processDeclarationWithInterface(combinedTypeSolver, declaration, ifc)))
+                filterMap(ifcs, ifc -> processDeclarationWithInterface(declaration, ifc)))
         .orElse(emptyList());
   }
 
   public Pair<IfcResolve, ClassOrInterfaceDeclaration> processDeclarationWithInterface(
-      CombinedTypeSolver combinedTypeSolver,
-      ClassOrInterfaceDeclaration declaration,
-      IfcResolve ifc) {
+      ClassOrInterfaceDeclaration declaration, IfcResolve ifc) {
 
-    List<MethodDeclaration> declarations =
-        findMethodDeclarationsForInterface(combinedTypeSolver, declaration, ifc);
+    List<String> matches = ifc.matches(declaration);
 
-    ResolvedReferenceTypeDeclaration other =
-        ifc.resolve != null ? ifc.resolve : typeDeclarationFor(ifc.clazz, combinedTypeSolver);
-
+    // if any of the declaration's ancestors is already assignable to ifc
     boolean canBeAssignedTo =
         anyMatch(
             declaration.resolve().getAncestors(),
             ancestor -> {
               try {
-                return other.isAssignableBy(ancestor);
+                return ifc.getResolvedTypeDeclaration().isAssignableBy(ancestor);
               } catch (RuntimeException e) {
                 // e.printStackTrace();
                 return false;
               }
             });
-    if (declarations.size() == ifc.methods.size() && !canBeAssignedTo) {
+    if (matches != null && !canBeAssignedTo) {
       log.info(
-          "Modifying the class: " + declaration.getFullyQualifiedName() + " with ifc " + ifc.name);
+          "Modifying the class: "
+              + declaration.getFullyQualifiedName()
+              + " with ifc "
+              + ifc.getName());
       // ClassOrInterfaceType type = getInterfaceType(ifc, declarations);
-      declaration.addImplementedType(ifc.name);
+      declaration.addImplementedType(ifc.getName());
       return pair(ifc, declaration);
     }
 
     return null;
-  }
-
-  public ClassOrInterfaceType getInterfaceType(
-      IfcResolve ifc, List<MethodDeclaration> declarations) {
-    ClassOrInterfaceType classOrInterfaceType = new ClassOrInterfaceType(ifc.name);
-
-    if (ifc.clazz != null && ifc.clazz.getTypeParameters().length > 0) {
-      for (TypeVariable<? extends Class<?>> typeParameter : ifc.clazz.getTypeParameters()) {
-        typeParameter.getName();
-      }
-
-    } else if (ifc.resolve != null && ifc.resolve.getTypeParameters().size() > 0) {
-    }
-
-    return classOrInterfaceType;
-  }
-
-  public List<MethodDeclaration> findMethodDeclarationsForInterface(
-      CombinedTypeSolver combinedTypeSolver,
-      ClassOrInterfaceDeclaration declaration,
-      IfcResolve ifc) {
-    log.info("Check methods for " + ifc.name);
-    List<Optional<MethodDeclaration>> methodDeclarations =
-        map(
-            ifc.methods,
-            methodDecl -> {
-              String[] paramStringTypes = methodDecl.getParamStringTypes();
-              List<MethodDeclaration> methodsBySignature =
-                  declaration.getMethodsBySignature(methodDecl.getName(), paramStringTypes);
-              log.info(
-                  "Check method "
-                      + methodDecl.getName()
-                      + " with params "
-                      + asList(methodDecl.getParamStringTypes())
-                      + " similar methods "
-                      + methodsBySignature);
-              return findFirst(
-                  methodsBySignature, method -> methodDecl.matches(method, combinedTypeSolver));
-            });
-    return filterMap(methodDeclarations, Optional::isPresent, Optional::get);
   }
 }

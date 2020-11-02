@@ -1,28 +1,30 @@
 package pl.matsuo.interfacer.core;
 
+import com.github.javaparser.symbolsolver.model.resolution.TypeSolver;
 import lombok.extern.slf4j.Slf4j;
 import org.reflections.Reflections;
 import org.reflections.scanners.SubTypesScanner;
 import org.reflections.util.ClasspathHelper;
 import org.reflections.util.ConfigurationBuilder;
 import org.reflections.util.FilterBuilder;
+import pl.matsuo.interfacer.model.ifc.ClassIfcResolve;
+import pl.matsuo.interfacer.model.ifc.IfcResolve;
 
 import java.io.File;
-import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.List;
 
 import static java.util.Collections.emptyList;
-import static pl.matsuo.interfacer.core.CollectionUtil.filterMap;
-import static pl.matsuo.interfacer.core.CollectionUtil.map;
+import static pl.matsuo.interfacer.util.CollectionUtil.filterMap;
+import static pl.matsuo.interfacer.util.CollectionUtil.map;
 
 @Slf4j
 public class ClasspathInterfacesScanner {
 
   public List<IfcResolve> scanInterfacesFromClasspath(
-      ClassLoader classLoader, String interfacePackage) {
+      ClassLoader classLoader, String interfacePackage, TypeSolver typeSolver) {
     if (interfacePackage == null) {
       return emptyList();
     }
@@ -30,24 +32,16 @@ public class ClasspathInterfacesScanner {
     String[] interfacePackages = interfacePackage.split(",");
     Reflections reflections = createReflections(classLoader, interfacePackages);
 
-    List<IfcResolve> ifcs =
-        filterMap(reflections.getSubTypesOf(Object.class), this::processClassFromClasspath);
-
-    return ifcs;
+    return filterMap(
+        reflections.getSubTypesOf(Object.class),
+        type -> processClassFromClasspath(type, typeSolver));
   }
 
-  public IfcResolve processClassFromClasspath(Class<?> type) {
+  public IfcResolve processClassFromClasspath(Class<?> type, TypeSolver typeSolver) {
     log.info("Processing classpath type: " + type.getCanonicalName());
     if (type.isInterface()) {
       log.info("Adding interface: " + type.getName());
-      IfcResolve ifcResolve = new IfcResolve(type.getName(), null, type);
-
-      for (Method method : type.getMethods()) {
-        log.info("Adding method: " + method.getName());
-        ifcResolve.methods.add(new TypeWithName(method));
-      }
-
-      return ifcResolve;
+      return new ClassIfcResolve(type, typeSolver);
     }
 
     return null;

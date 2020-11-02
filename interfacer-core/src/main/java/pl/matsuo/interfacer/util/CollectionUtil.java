@@ -1,4 +1,4 @@
-package pl.matsuo.interfacer.core;
+package pl.matsuo.interfacer.util;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -89,5 +89,15 @@ public class CollectionUtil {
     }
 
     return false;
+  }
+
+  public static <E> boolean allMatch(Collection<E> collection, Predicate<E> condition) {
+    for (E element : collection) {
+      if (!condition.test(element)) {
+        return false;
+      }
+    }
+
+    return true;
   }
 }

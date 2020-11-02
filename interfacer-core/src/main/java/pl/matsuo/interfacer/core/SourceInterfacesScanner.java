@@ -7,6 +7,8 @@ import com.github.javaparser.ast.body.BodyDeclaration;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.utils.SourceRoot;
 import lombok.extern.slf4j.Slf4j;
+import pl.matsuo.interfacer.model.ifc.IfcResolve;
+import pl.matsuo.interfacer.model.ifc.TypeDeclarationIfcResolve;
 
 import java.io.File;
 import java.io.IOException;
@@ -51,33 +53,7 @@ public class SourceInterfacesScanner {
         .filter(BodyDeclaration::isClassOrInterfaceDeclaration)
         .map(type -> (ClassOrInterfaceDeclaration) type)
         .filter(ClassOrInterfaceDeclaration::isInterface)
-        .map(
-            type -> {
-              log.info("Adding interface: " + type.getNameAsString());
-              IfcResolve ifcResolve =
-                  new IfcResolve(
-                      cu.getPackageDeclaration()
-                              .map(packageDeclaration -> packageDeclaration.getNameAsString() + ".")
-                              .orElse("")
-                          + type.getNameAsString(),
-                      type.resolve(),
-                      null);
-
-              type.resolve()
-                  .getAllMethods()
-                  .forEach(
-                      method -> {
-                        if (!method.declaringType().getPackageName().equals("java.lang")
-                            || !method.declaringType().getClassName().equals("Object")) {
-                          log.info("Adding method: " + method.getName());
-                          ifcResolve.methods.add(new TypeWithName(method));
-                        }
-                      });
-
-              type.getMethods().forEach(methodDeclaration -> {});
-
-              return ifcResolve;
-            })
+        .map(type -> new TypeDeclarationIfcResolve(cu, type))
         .orElse(null);
   }
 }
