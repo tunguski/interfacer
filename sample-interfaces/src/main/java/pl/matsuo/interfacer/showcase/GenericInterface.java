@@ -6,5 +6,9 @@ public interface GenericInterface<E> {
 
   E getSingleton();
 
+  void setSingleton(E value);
+
   List<E> getList();
+
+  void setList(List<E> value);
 }

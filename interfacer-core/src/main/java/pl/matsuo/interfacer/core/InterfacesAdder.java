@@ -2,14 +2,9 @@ package pl.matsuo.interfacer.core;
 
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ParseResult;
-import com.github.javaparser.ParserConfiguration;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
-import com.github.javaparser.symbolsolver.JavaSymbolSolver;
-import com.github.javaparser.symbolsolver.model.resolution.TypeSolver;
-import com.github.javaparser.symbolsolver.resolution.typesolvers.ClassLoaderTypeSolver;
-import com.github.javaparser.symbolsolver.resolution.typesolvers.CombinedTypeSolver;
-import com.github.javaparser.symbolsolver.resolution.typesolvers.JavaParserTypeSolver;
+import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.github.javaparser.utils.SourceRoot;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -22,6 +17,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 
 import static java.util.Collections.emptyList;
 import static java.util.Comparator.comparing;
@@ -55,25 +51,17 @@ public class InterfacesAdder {
     try {
       List<Pair<IfcResolve, ClassOrInterfaceDeclaration>> allModifications = new ArrayList<>();
       while (true) {
-        ClassLoader classLoader =
-            ClasspathInterfacesScanner.getCompileClassLoader(compileClasspathElements);
+        ParsingContext parsingContext =
+            new ParsingContext(compileClasspathElements, scanDirectory, interfacesDirectory);
 
-        CombinedTypeSolver combinedTypeSolver =
-            createTypeSolver(scanDirectory, interfacesDirectory, classLoader);
-        ParserConfiguration parserConfiguration = new ParserConfiguration();
-        parserConfiguration.setSymbolResolver(new JavaSymbolSolver(combinedTypeSolver));
-        final SourceRoot source = new SourceRoot(scanDirectory.toPath(), parserConfiguration);
+        final SourceRoot source =
+            new SourceRoot(scanDirectory.toPath(), parsingContext.parserConfiguration);
 
         List<IfcResolve> ifcs =
-            scanInterfaces(
-                interfacesDirectory,
-                interfacePackage,
-                classLoader,
-                parserConfiguration,
-                combinedTypeSolver);
+            scanInterfaces(interfacesDirectory, interfacePackage, parsingContext);
 
         List<Pair<IfcResolve, ClassOrInterfaceDeclaration>> modifications =
-            processAllFiles(combinedTypeSolver, source.tryToParse(), ifcs);
+            processAllFiles(source.tryToParse(), ifcs, parsingContext.javaParser);
         allModifications.addAll(modifications);
 
         // save changes on disk
@@ -88,45 +76,33 @@ public class InterfacesAdder {
     }
   }
 
-  public ParseResult<CompilationUnit> parseString(
-      CombinedTypeSolver combinedTypeSolver, String content) {
-    ParserConfiguration parserConfiguration = new ParserConfiguration();
-    parserConfiguration.setSymbolResolver(new JavaSymbolSolver(combinedTypeSolver));
-    return new JavaParser(parserConfiguration).parse(content);
-  }
-
-  public ParseResult<CompilationUnit> parseFile(CombinedTypeSolver combinedTypeSolver, File file) {
-    ParserConfiguration parserConfiguration = new ParserConfiguration();
-    parserConfiguration.setSymbolResolver(new JavaSymbolSolver(combinedTypeSolver));
+  public ParseResult<CompilationUnit> parseFile(JavaParser javaParser, File file) {
     try {
-      return new JavaParser(parserConfiguration).parse(file);
+      return javaParser.parse(file);
     } catch (FileNotFoundException e) {
       throw new RuntimeException(e);
     }
   }
 
   public List<IfcResolve> scanInterfaces(
-      File interfacesDirectory,
-      String interfacePackage,
-      ClassLoader classLoader,
-      ParserConfiguration parserConfiguration,
-      TypeSolver typeSolver) {
+      File interfacesDirectory, String interfacePackage, ParsingContext parsingContext) {
     List<IfcResolve> ifcs = new ArrayList<>();
     ifcs.addAll(
         new ClasspathInterfacesScanner()
-            .scanInterfacesFromClasspath(classLoader, interfacePackage, typeSolver));
+            .scanInterfacesFromClasspath(
+                parsingContext.classLoader, interfacePackage, parsingContext.typeSolver));
     ifcs.addAll(
         new SourceInterfacesScanner()
-            .scanInterfacesFromSrc(parserConfiguration, interfacesDirectory));
+            .scanInterfacesFromSrc(parsingContext.parserConfiguration, interfacesDirectory));
     Comparator<IfcResolve> comparator = comparing(i -> -i.getMethods().size());
     ifcs.sort(comparator);
     return ifcs;
   }
 
   public List<Pair<IfcResolve, ClassOrInterfaceDeclaration>> processAllFiles(
-      TypeSolver typeSolver,
       List<ParseResult<CompilationUnit>> parseResults,
-      List<IfcResolve> ifcs) {
+      List<IfcResolve> ifcs,
+      JavaParser javaParser) {
 
     return flatMap(
         parseResults,
@@ -138,7 +114,7 @@ public class InterfacesAdder {
                 .map(
                     cu -> {
                       // Do the actual logic
-                      return addInterfaces(cu, ifcs, typeSolver);
+                      return addInterfaces(cu, ifcs, javaParser);
                     })
                 .orElse(emptyList());
           } else {
@@ -148,17 +124,8 @@ public class InterfacesAdder {
         });
   }
 
-  public CombinedTypeSolver createTypeSolver(
-      File scanDirectory, File interfacesDirectory, ClassLoader classLoader) {
-    CombinedTypeSolver combinedTypeSolver = new CombinedTypeSolver();
-    combinedTypeSolver.add(new ClassLoaderTypeSolver(classLoader));
-    combinedTypeSolver.add(new JavaParserTypeSolver(scanDirectory.toPath()));
-    combinedTypeSolver.add(new JavaParserTypeSolver(interfacesDirectory.toPath()));
-    return combinedTypeSolver;
-  }
-
   public List<Pair<IfcResolve, ClassOrInterfaceDeclaration>> addInterfaces(
-      CompilationUnit compilationUnit, List<IfcResolve> ifcs, TypeSolver typeSolver) {
+      CompilationUnit compilationUnit, List<IfcResolve> ifcs, JavaParser javaParser) {
     return compilationUnit
         .getPrimaryType()
         .map(
@@ -169,14 +136,15 @@ public class InterfacesAdder {
         .filter(declaration -> !declaration.isInterface())
         .map(
             declaration ->
-                filterMap(ifcs, ifc -> processDeclarationWithInterface(declaration, ifc)))
+                filterMap(
+                    ifcs, ifc -> processDeclarationWithInterface(declaration, ifc, javaParser)))
         .orElse(emptyList());
   }
 
   public Pair<IfcResolve, ClassOrInterfaceDeclaration> processDeclarationWithInterface(
-      ClassOrInterfaceDeclaration declaration, IfcResolve ifc) {
+      ClassOrInterfaceDeclaration declaration, IfcResolve ifc, JavaParser javaParser) {
 
-    List<String> matches = ifc.matches(declaration);
+    Map<String, String> resolvedTypeVariables = ifc.matches(declaration);
 
     // if any of the declaration's ancestors is already assignable to ifc
     boolean canBeAssignedTo =
@@ -190,14 +158,21 @@ public class InterfacesAdder {
                 return false;
               }
             });
-    if (matches != null && !canBeAssignedTo) {
+    if (resolvedTypeVariables != null && !canBeAssignedTo) {
       log.info(
           "Modifying the class: "
               + declaration.getFullyQualifiedName()
               + " with ifc "
               + ifc.getName());
-      // ClassOrInterfaceType type = getInterfaceType(ifc, declarations);
-      declaration.addImplementedType(ifc.getName());
+
+      ClassOrInterfaceType type = // new ClassOrInterfaceType(ifc.getName());
+          javaParser
+              .parseClassOrInterfaceType(ifc.getGenericName(resolvedTypeVariables))
+              .getResult()
+              .orElseThrow(() -> new RuntimeException(""));
+      // type.setTypeArguments(ifc.getTypeArguments(resolvedTypeVariables));
+
+      declaration.addImplementedType(type);
       return pair(ifc, declaration);
     }
 

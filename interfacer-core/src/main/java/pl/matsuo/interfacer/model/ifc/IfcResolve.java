@@ -5,10 +5,13 @@ import com.github.javaparser.resolution.declarations.ResolvedReferenceTypeDeclar
 import pl.matsuo.interfacer.model.ref.MethodReference;
 
 import java.util.List;
+import java.util.Map;
 
 public interface IfcResolve {
 
   String getName();
+
+  String getGenericName(Map<String, String> typeParams);
 
   List<MethodReference> getMethods();
 
@@ -20,5 +23,5 @@ public interface IfcResolve {
    *
    * <p>Returns null if declaration does not match with interface.
    */
-  List<String> matches(ClassOrInterfaceDeclaration declaration);
+  Map<String, String> matches(ClassOrInterfaceDeclaration declaration);
 }

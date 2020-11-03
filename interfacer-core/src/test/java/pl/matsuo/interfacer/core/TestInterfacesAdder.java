@@ -3,9 +3,7 @@ package pl.matsuo.interfacer.core;
 import com.github.javaparser.ParseResult;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
-import com.github.javaparser.symbolsolver.resolution.typesolvers.CombinedTypeSolver;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.Ignore;
 import org.junit.Test;
 import pl.matsuo.interfacer.model.ifc.IfcResolve;
 import pl.matsuo.interfacer.showcase.GenericInterface;
@@ -17,6 +15,7 @@ import java.io.File;
 import java.util.List;
 
 import static java.util.Arrays.asList;
+import static java.util.Collections.emptyList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -32,11 +31,17 @@ public class TestInterfacesAdder {
   }
 
   @Test
-  @Ignore
   public void testGenericInterface() {
     List<Pair<IfcResolve, ClassOrInterfaceDeclaration>> modifications =
-        doTestInterface("/classes/test/SampleClass.java", GenericInterface.class);
+        doTestInterface("/classes/test/SampleGenericClass.java", GenericInterface.class);
     assertEquals(1, modifications.size());
+  }
+
+  @Test
+  public void testNotGenericInterface() {
+    List<Pair<IfcResolve, ClassOrInterfaceDeclaration>> modifications =
+        doTestInterface("/classes/test/SampleNotGenericClass.java", GenericInterface.class);
+    assertEquals(0, modifications.size());
   }
 
   @Test
@@ -57,16 +62,16 @@ public class TestInterfacesAdder {
     File sampleClassFile = fileForResource(className);
     File scanDir = sampleClassFile.getParentFile();
 
-    CombinedTypeSolver typeSolver =
-        interfacesAdder.createTypeSolver(scanDir, scanDir, getClass().getClassLoader());
+    ParsingContext parsingContext = new ParsingContext(emptyList(), scanDir, scanDir);
 
     ClasspathInterfacesScanner interfacesScanner = new ClasspathInterfacesScanner();
-    IfcResolve genericInterface = interfacesScanner.processClassFromClasspath(ifc, typeSolver);
+    IfcResolve genericInterface =
+        interfacesScanner.processClassFromClasspath(ifc, parsingContext.typeSolver);
 
     assertNotNull(genericInterface);
 
     ParseResult<CompilationUnit> compilationUnitParseResult =
-        interfacesAdder.parseFile(typeSolver, sampleClassFile);
+        interfacesAdder.parseFile(parsingContext.javaParser, sampleClassFile);
 
     if (!compilationUnitParseResult.isSuccessful()) {
       log.info("" + compilationUnitParseResult.getProblems());
@@ -74,7 +79,9 @@ public class TestInterfacesAdder {
 
     List<Pair<IfcResolve, ClassOrInterfaceDeclaration>> modifications =
         interfacesAdder.processAllFiles(
-            typeSolver, asList(compilationUnitParseResult), asList(genericInterface));
+            asList(compilationUnitParseResult),
+            asList(genericInterface),
+            parsingContext.javaParser);
 
     modifications.forEach(mod -> log.info(mod.toString()));
 
@@ -93,11 +100,10 @@ public class TestInterfacesAdder {
     File sampleClassFile = fileForResource(className);
     File scanDir = sampleClassFile.getParentFile();
 
-    CombinedTypeSolver typeSolver =
-        interfacesAdder.createTypeSolver(scanDir, interfacesDir, getClass().getClassLoader());
+    ParsingContext parsingContext = new ParsingContext(emptyList(), scanDir, interfacesDir);
 
     ParseResult<CompilationUnit> compilationUnitParseResult =
-        interfacesAdder.parseFile(typeSolver, sampleClassFile);
+        interfacesAdder.parseFile(parsingContext.javaParser, sampleClassFile);
 
     if (!compilationUnitParseResult.isSuccessful()) {
       log.info("" + compilationUnitParseResult.getProblems());
@@ -105,7 +111,7 @@ public class TestInterfacesAdder {
 
     List<Pair<IfcResolve, ClassOrInterfaceDeclaration>> modifications =
         interfacesAdder.processAllFiles(
-            typeSolver, asList(compilationUnitParseResult), ifcResolves);
+            asList(compilationUnitParseResult), ifcResolves, parsingContext.javaParser);
 
     modifications.forEach(mod -> log.info(mod.toString()));
 

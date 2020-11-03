@@ -5,6 +5,11 @@ import com.github.javaparser.resolution.MethodUsage;
 import com.github.javaparser.resolution.types.ResolvedType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import pl.matsuo.interfacer.model.tv.TypeVariableReference;
+
+import java.util.Map;
+
+import static java.util.Collections.emptyMap;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -16,7 +21,42 @@ public class MethodUsageReference implements MethodReference {
     return methodUsage.getName();
   }
 
-  public boolean matches(MethodDeclaration methodDeclaration) {
+  public Map<String, String> matches(
+      MethodDeclaration methodDeclaration, Map<String, TypeVariableReference> typeVariables) {
+    if (!returnTypeMatches(methodDeclaration)) {
+      return null;
+    }
+
+    if (!parametersMatch(methodDeclaration)) {
+      return null;
+    }
+
+    // Type type = methodDeclaration.getParameter(0).getType();
+    // TypeParameter
+    // IntersectionType
+    // WildcardType
+
+    // ResolvedType paramType = methodUsage.getParamType(0);
+    // ResolvedIntersectionType
+    // ResolvedWildcard
+    // ResolvedTypeVariable
+
+    return emptyMap();
+  }
+
+  private boolean parametersMatch(MethodDeclaration methodDeclaration) {
+    for (int i = 0; i < methodUsage.getNoParams(); i++) {
+      ResolvedType paramType = methodUsage.getParamType(i);
+      ResolvedType resolvedType = methodDeclaration.getParameter(i).getType().resolve();
+
+      if (!paramType.isAssignableBy(resolvedType)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  private boolean returnTypeMatches(MethodDeclaration methodDeclaration) {
     if (methodUsage.returnType().isPrimitive() || methodUsage.returnType().isVoid()) {
       if (!methodUsage
           .returnType()
@@ -29,16 +69,6 @@ public class MethodUsageReference implements MethodReference {
         return false;
       }
     }
-
-    for (int i = 0; i < methodUsage.getNoParams(); i++) {
-      ResolvedType paramType = methodUsage.getParamType(i);
-      ResolvedType resolvedType = methodDeclaration.getParameter(i).getType().resolve();
-
-      if (!paramType.isAssignableBy(resolvedType)) {
-        return false;
-      }
-    }
-
     return true;
   }
 }

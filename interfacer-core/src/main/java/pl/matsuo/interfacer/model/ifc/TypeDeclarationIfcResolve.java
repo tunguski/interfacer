@@ -2,15 +2,21 @@ package pl.matsuo.interfacer.model.ifc;
 
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
+import com.github.javaparser.ast.type.TypeParameter;
 import com.github.javaparser.resolution.declarations.ResolvedReferenceTypeDeclaration;
 import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 import pl.matsuo.interfacer.model.ref.MethodReference;
 import pl.matsuo.interfacer.model.ref.MethodUsageReference;
+import pl.matsuo.interfacer.model.tv.TypeVariableReference;
 
 import java.util.List;
+import java.util.Map;
 
+import static java.lang.String.join;
 import static pl.matsuo.interfacer.util.CollectionUtil.filterMap;
+import static pl.matsuo.interfacer.util.CollectionUtil.map;
+import static pl.matsuo.interfacer.util.CollectionUtil.toMap;
 
 @ToString
 @RequiredArgsConstructor
@@ -29,6 +35,18 @@ public class TypeDeclarationIfcResolve extends AbstractIfcResolve {
   }
 
   @Override
+  public String getGenericName(Map<String, String> typeParams) {
+    if (declaration.getTypeParameters().isEmpty()) {
+      return getName();
+    } else {
+      return getName()
+          + "<"
+          + join(", ", map(declaration.getTypeParameters(), tp -> typeParams.get(tp.getName())))
+          + ">";
+    }
+  }
+
+  @Override
   public List<MethodReference> getMethods() {
     return filterMap(
         declaration.resolve().getAllMethods(),
@@ -41,5 +59,13 @@ public class TypeDeclarationIfcResolve extends AbstractIfcResolve {
   @Override
   public ResolvedReferenceTypeDeclaration getResolvedTypeDeclaration() {
     return declaration.resolve();
+  }
+
+  @Override
+  protected Map<String, TypeVariableReference> typeVariables() {
+    return toMap(
+        declaration.getTypeParameters(),
+        TypeParameter::asString,
+        tp -> new TypeVariableReference(null, tp));
   }
 }

@@ -2,7 +2,9 @@ package pl.matsuo.interfacer.util;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -20,6 +22,17 @@ public class CollectionUtil {
     }
 
     return resultList;
+  }
+
+  public static <F, T, R> Map<T, R> toMap(
+      Collection<? extends F> collection, Function<F, T> keyMapper, Function<F, R> valueMapper) {
+    Map<T, R> result = new HashMap<>();
+
+    for (F element : collection) {
+      result.put(keyMapper.apply(element), valueMapper.apply(element));
+    }
+
+    return result;
   }
 
   public static <F, T> List<T> flatMap(
@@ -79,6 +92,17 @@ public class CollectionUtil {
     }
 
     return empty();
+  }
+
+  public static <E, F> F firstNotNull(Collection<E> collection, Function<E, F> mapper) {
+    for (E element : collection) {
+      F mapped = mapper.apply(element);
+      if (mapped != null) {
+        return mapped;
+      }
+    }
+
+    return null;
   }
 
   public static <E> boolean anyMatch(Collection<E> collection, Predicate<E> condition) {
