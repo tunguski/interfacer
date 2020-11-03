@@ -70,7 +70,7 @@ public class Company implements HasName {
 <plugin>
     <groupId>pl.matsuo.interfacer</groupId>
     <artifactId>interfacer-maven-plugin</artifactId>
-    <version>0.0.5</version>
+    <version>0.0.6</version>
     <executions>
         <execution>
             <configuration>
