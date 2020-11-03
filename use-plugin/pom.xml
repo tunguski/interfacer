@@ -40,7 +40,6 @@
                 </configuration>
             </plugin>
 
-            <!-- Execute the sample plugin -->
             <plugin>
                 <groupId>pl.matsuo.interfacer</groupId>
                 <artifactId>interfacer-maven-plugin</artifactId>
@@ -48,11 +47,9 @@
                 <executions>
                     <execution>
                         <configuration>
-                            <!-- We want this code to get the trace lines: -->
                             <interfacePackage>pl.matsuo.interfacer.showcase</interfacePackage>
                         </configuration>
                         <goals>
-                            <!-- The goal finds the name in the @Mojo annotation on TraceCodePluginMojo -->
                             <goal>add-interfaces</goal>
                         </goals>
                     </execution>

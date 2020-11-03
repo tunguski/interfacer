@@ -66,7 +66,6 @@ public class Company implements HasName {
 ## Maven Usage
 
 ```
-<!-- Execute the sample plugin -->
 <plugin>
     <groupId>pl.matsuo.interfacer</groupId>
     <artifactId>interfacer-maven-plugin</artifactId>
@@ -74,12 +73,10 @@ public class Company implements HasName {
     <executions>
         <execution>
             <configuration>
-                <!-- We want this code to get the trace lines: -->
                 <interfacesDirectory>${project.basedir}/src/main/java</interfacesDirectory>
                 <interfacePackage>pl.matsuo.interfacer.showcase</interfacePackage>
             </configuration>
             <goals>
-                <!-- The goal finds the name in the @Mojo annotation on TraceCodePluginMojo -->
                 <goal>add-interfaces</goal>
             </goals>
         </execution>
