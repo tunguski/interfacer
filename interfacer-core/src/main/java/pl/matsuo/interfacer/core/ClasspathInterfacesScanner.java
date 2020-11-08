@@ -20,9 +20,14 @@ import static java.util.Collections.emptyList;
 import static pl.matsuo.interfacer.util.CollectionUtil.filterMap;
 import static pl.matsuo.interfacer.util.CollectionUtil.map;
 
+/** Implements scanning classpath for interfaces that should be used during interface adding. */
 @Slf4j
 public class ClasspathInterfacesScanner {
 
+  /**
+   * Use {@link Reflections} to scan for all interfaces in specified package <code>interfacePackage
+   * </code> and create {@link IfcResolve} instances for every one of them.
+   */
   public List<IfcResolve> scanInterfacesFromClasspath(
       ClassLoader classLoader, String interfacePackage, TypeSolver typeSolver) {
     if (interfacePackage == null) {
@@ -37,6 +42,7 @@ public class ClasspathInterfacesScanner {
         type -> processClassFromClasspath(type, typeSolver));
   }
 
+  /** Create {@link IfcResolve} for <code>type</code> if it is representing interface. */
   public IfcResolve processClassFromClasspath(Class<?> type, TypeSolver typeSolver) {
     log.info("Processing classpath type: " + type.getCanonicalName());
     if (type.isInterface()) {
@@ -47,6 +53,7 @@ public class ClasspathInterfacesScanner {
     return null;
   }
 
+  /** Create {@link Reflections} scanner. */
   public Reflections createReflections(ClassLoader classLoader, String[] interfacePackages) {
     return new Reflections(
         new ConfigurationBuilder()
@@ -56,6 +63,7 @@ public class ClasspathInterfacesScanner {
             .filterInputsBy(new FilterBuilder().includePackage(interfacePackages)));
   }
 
+  /** Create classloader based on <code>compileClasspathElements</code> urls. */
   public static ClassLoader getCompileClassLoader(List<String> compileClasspathElements) {
     List<URL> jars = map(compileClasspathElements, ClasspathInterfacesScanner::toUrl);
     jars.forEach(element -> log.info("Compile classloader entry: " + element));
@@ -63,6 +71,7 @@ public class ClasspathInterfacesScanner {
     return new URLClassLoader(jars.toArray(new URL[0]));
   }
 
+  /** Create url from file name. */
   public static URL toUrl(String name) {
     try {
       return new File(name).toURI().toURL();

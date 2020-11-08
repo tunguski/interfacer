@@ -15,12 +15,19 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+/** Implements scanning sources for interfaces that should be used during interface adding. */
 @Slf4j
 public class SourceInterfacesScanner {
 
+  /** Parse source classes and create {@link IfcResolve} for interfaces. */
   public List<IfcResolve> scanInterfacesFromSrc(
       ParserConfiguration parserConfiguration, File interfacesDirectory) {
     List<IfcResolve> ifcs = new ArrayList<>();
+
+    // do not scan anything if source directory was not specified
+    if (interfacesDirectory == null) {
+      return ifcs;
+    }
 
     final SourceRoot source = new SourceRoot(interfacesDirectory.toPath(), parserConfiguration);
     try {
@@ -48,12 +55,14 @@ public class SourceInterfacesScanner {
     return ifcs;
   }
 
-  public IfcResolve getIfcResolve(CompilationUnit cu) {
-    return cu.getPrimaryType()
+  /** Create {@link IfcResolve} for interface represented by <code>compilationUnit</code>. */
+  public IfcResolve getIfcResolve(CompilationUnit compilationUnit) {
+    return compilationUnit
+        .getPrimaryType()
         .filter(BodyDeclaration::isClassOrInterfaceDeclaration)
         .map(type -> (ClassOrInterfaceDeclaration) type)
         .filter(ClassOrInterfaceDeclaration::isInterface)
-        .map(type -> new TypeDeclarationIfcResolve(cu, type))
+        .map(type -> new TypeDeclarationIfcResolve(compilationUnit, type))
         .orElse(null);
   }
 }

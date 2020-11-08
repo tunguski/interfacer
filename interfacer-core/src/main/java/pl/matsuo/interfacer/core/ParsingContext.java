@@ -11,6 +11,7 @@ import lombok.NonNull;
 import java.io.File;
 import java.util.List;
 
+/** Data transfer object containing objects used for parsing. */
 public class ParsingContext {
 
   final ClassLoader classLoader;
@@ -29,6 +30,7 @@ public class ParsingContext {
     javaParser = new JavaParser(parserConfiguration);
   }
 
+  /** Create type solver used for type resolution when checking is class matching interface. */
   public CombinedTypeSolver createTypeSolver(
       File scanDirectory, File interfacesDirectory, ClassLoader classLoader) {
     CombinedTypeSolver combinedTypeSolver = new CombinedTypeSolver();

@@ -36,6 +36,7 @@ public class InterfacerPluginMojo extends AbstractMojo {
   @Parameter(property = "project", required = true, readonly = true)
   MavenProject project;
 
+  /** Configure execution environment and invoke interface adder. */
   @Override
   public void execute() throws MojoExecutionException {
     JavaParserMavenUtils.makeJavaParserLogToMavenOutput(getLog());

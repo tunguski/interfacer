@@ -29,6 +29,34 @@ import static pl.matsuo.interfacer.util.Pair.pair;
 @Slf4j
 public class InterfacesAdder {
 
+  /**
+   * Add interfaces found in <code>interfacesDirectory</code> and <code>compileClasspathElements
+   * </code> to classes found in <code>scanDirectory</code>.
+   *
+   * <p>Method will execute multiple passes of adding. When classes implement additional interfaces,
+   * it's possible that some classes may now match new interfaces.
+   *
+   * <pre>
+   *         interface SampleInterface {
+   *           Integer getValue();
+   *         }
+   *
+   *         interface SampleInterface2 {
+   *           SampleInterface getResult();
+   *         }
+   *
+   *         class SampleResult {
+   *           Integer getValue();
+   *         }
+   *
+   *         class Sample {
+   *             SampleResult getResult();
+   *         }
+   *     </pre>
+   *
+   * In first pass we can add <code>SampleInterface</code> to <code>SampleResult</code>. Now in
+   * second pass we can add <code>SampleInterface2</code> to <code>Sample</code>.
+   */
   public void addInterfacesAllFiles(
       @NonNull File scanDirectory,
       File interfacesDirectory,
@@ -51,21 +79,13 @@ public class InterfacesAdder {
     try {
       List<Pair<IfcResolve, ClassOrInterfaceDeclaration>> allModifications = new ArrayList<>();
       while (true) {
-        ParsingContext parsingContext =
-            new ParsingContext(compileClasspathElements, scanDirectory, interfacesDirectory);
-
-        final SourceRoot source =
-            new SourceRoot(scanDirectory.toPath(), parsingContext.parserConfiguration);
-
-        List<IfcResolve> ifcs =
-            scanInterfaces(interfacesDirectory, interfacePackage, parsingContext);
-
         List<Pair<IfcResolve, ClassOrInterfaceDeclaration>> modifications =
-            processAllFiles(source.tryToParse(), ifcs, parsingContext.javaParser);
-        allModifications.addAll(modifications);
-
-        // save changes on disk
-        source.saveAll();
+            addInterfacesAllFiles(
+                scanDirectory,
+                interfacesDirectory,
+                interfacePackage,
+                compileClasspathElements,
+                allModifications);
 
         if (modifications.isEmpty()) {
           break;
@@ -76,6 +96,32 @@ public class InterfacesAdder {
     }
   }
 
+  /** Single pass of interface adding. */
+  private List<Pair<IfcResolve, ClassOrInterfaceDeclaration>> addInterfacesAllFiles(
+      File scanDirectory,
+      File interfacesDirectory,
+      String interfacePackage,
+      List<String> compileClasspathElements,
+      List<Pair<IfcResolve, ClassOrInterfaceDeclaration>> allModifications)
+      throws IOException {
+    ParsingContext parsingContext =
+        new ParsingContext(compileClasspathElements, scanDirectory, interfacesDirectory);
+
+    final SourceRoot source =
+        new SourceRoot(scanDirectory.toPath(), parsingContext.parserConfiguration);
+
+    List<IfcResolve> ifcs = scanInterfaces(interfacesDirectory, interfacePackage, parsingContext);
+
+    List<Pair<IfcResolve, ClassOrInterfaceDeclaration>> modifications =
+        processAllFiles(source.tryToParse(), ifcs, parsingContext.javaParser);
+    allModifications.addAll(modifications);
+
+    // save changes on disk
+    source.saveAll();
+    return modifications;
+  }
+
+  /** Parse file using internal {@link JavaParser}. */
   public ParseResult<CompilationUnit> parseFile(JavaParser javaParser, File file) {
     try {
       return javaParser.parse(file);
@@ -84,6 +130,7 @@ public class InterfacesAdder {
     }
   }
 
+  /** Search for interfaces on classpath and in source folder. */
   public List<IfcResolve> scanInterfaces(
       File interfacesDirectory, String interfacePackage, ParsingContext parsingContext) {
     List<IfcResolve> ifcs = new ArrayList<>();
@@ -99,6 +146,7 @@ public class InterfacesAdder {
     return ifcs;
   }
 
+  /** Go through all parsed generated classes and try adding interfaces to them. */
   public List<Pair<IfcResolve, ClassOrInterfaceDeclaration>> processAllFiles(
       List<ParseResult<CompilationUnit>> parseResults,
       List<IfcResolve> ifcs,
@@ -124,6 +172,7 @@ public class InterfacesAdder {
         });
   }
 
+  /** Add interfaces to class parsed into <code>compilationUnit</code>. */
   public List<Pair<IfcResolve, ClassOrInterfaceDeclaration>> addInterfaces(
       CompilationUnit compilationUnit, List<IfcResolve> ifcs, JavaParser javaParser) {
     return compilationUnit
@@ -141,41 +190,62 @@ public class InterfacesAdder {
         .orElse(emptyList());
   }
 
+  /**
+   * Check if class <code>declaration</code> is matching interface <code>ifc</code>. If true, add
+   * interface to the class. Return <code>pair</code> representing interface and class. Return
+   * <code>null</code> if interface was not added.
+   */
   public Pair<IfcResolve, ClassOrInterfaceDeclaration> processDeclarationWithInterface(
       ClassOrInterfaceDeclaration declaration, IfcResolve ifc, JavaParser javaParser) {
 
     Map<String, String> resolvedTypeVariables = ifc.matches(declaration);
 
     // if any of the declaration's ancestors is already assignable to ifc
-    boolean canBeAssignedTo =
-        anyMatch(
-            declaration.resolve().getAncestors(),
-            ancestor -> {
-              try {
-                return ifc.getResolvedTypeDeclaration().isAssignableBy(ancestor);
-              } catch (RuntimeException e) {
-                // e.printStackTrace();
-                return false;
-              }
-            });
+    boolean canBeAssignedTo = canBeAssignedTo(declaration, ifc);
     if (resolvedTypeVariables != null && !canBeAssignedTo) {
-      log.info(
-          "Modifying the class: "
-              + declaration.getFullyQualifiedName()
-              + " with ifc "
-              + ifc.getName());
-
-      ClassOrInterfaceType type = // new ClassOrInterfaceType(ifc.getName());
-          javaParser
-              .parseClassOrInterfaceType(ifc.getGenericName(resolvedTypeVariables))
-              .getResult()
-              .orElseThrow(() -> new RuntimeException(""));
-      // type.setTypeArguments(ifc.getTypeArguments(resolvedTypeVariables));
-
-      declaration.addImplementedType(type);
-      return pair(ifc, declaration);
+      return addInterfaceToClassDeclaration(declaration, ifc, javaParser, resolvedTypeVariables);
     }
 
     return null;
+  }
+
+  /**
+   * Create interface <code>ifc</code> representation in <code>javaparser</code> and add it to the
+   * class <code>declaration</code>.
+   */
+  private Pair<IfcResolve, ClassOrInterfaceDeclaration> addInterfaceToClassDeclaration(
+      ClassOrInterfaceDeclaration declaration,
+      IfcResolve ifc,
+      JavaParser javaParser,
+      Map<String, String> resolvedTypeVariables) {
+    log.info(
+        "Modifying the class: "
+            + declaration.getFullyQualifiedName()
+            + " with ifc "
+            + ifc.getName());
+
+    ClassOrInterfaceType type = // new ClassOrInterfaceType(ifc.getName());
+        javaParser
+            .parseClassOrInterfaceType(ifc.getGenericName(resolvedTypeVariables))
+            .getResult()
+            .orElseThrow(() -> new RuntimeException(""));
+    // type.setTypeArguments(ifc.getTypeArguments(resolvedTypeVariables));
+
+    declaration.addImplementedType(type);
+    return pair(ifc, declaration);
+  }
+
+  /** Check if <code>declaration</code> is representing subtype of interface <code>ifc</code>. */
+  private boolean canBeAssignedTo(ClassOrInterfaceDeclaration declaration, IfcResolve ifc) {
+    return anyMatch(
+        declaration.resolve().getAncestors(),
+        ancestor -> {
+          try {
+            return ifc.getResolvedTypeDeclaration().isAssignableBy(ancestor);
+          } catch (RuntimeException e) {
+            // e.printStackTrace();
+            return false;
+          }
+        });
   }
 }
