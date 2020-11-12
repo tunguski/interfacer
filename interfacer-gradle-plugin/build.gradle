@@ -6,7 +6,7 @@ plugins {
     id 'maven-publish'
 }
 
-group = 'pl.matsuo.interfacer'
+group = 'com.github.tunguski'
 version = '0.0.6'
 
 idea {
