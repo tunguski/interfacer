@@ -17,8 +17,8 @@ import java.net.URLClassLoader;
 import java.util.List;
 
 import static java.util.Collections.emptyList;
-import static pl.matsuo.interfacer.util.CollectionUtil.filterMap;
-import static pl.matsuo.interfacer.util.CollectionUtil.map;
+import static pl.matsuo.core.util.collection.CollectionUtil.filterMap;
+import static pl.matsuo.core.util.collection.CollectionUtil.map;
 
 /** Implements scanning classpath for interfaces that should be used during interface adding. */
 @Slf4j

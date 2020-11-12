@@ -40,10 +40,9 @@
             <version>30.0-jre</version>
         </dependency>
         <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <version>1.18.16</version>
-            <scope>provided</scope>
+            <groupId>pl.matsuo</groupId>
+            <artifactId>matsuo-util-collection</artifactId>
+            <version>0.1.5</version>
         </dependency>
 
         <dependency>
@@ -55,6 +54,13 @@
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-simple</artifactId>
             <version>${slf4j.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>1.18.16</version>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>

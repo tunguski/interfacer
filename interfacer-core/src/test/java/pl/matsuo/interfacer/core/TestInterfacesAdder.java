@@ -5,11 +5,11 @@ import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
+import pl.matsuo.core.util.collection.Pair;
 import pl.matsuo.interfacer.model.ifc.IfcResolve;
 import pl.matsuo.interfacer.showcase.GenericInterface;
 import pl.matsuo.interfacer.showcase.HasName;
 import pl.matsuo.interfacer.showcase.MutableOwner;
-import pl.matsuo.interfacer.util.Pair;
 
 import java.io.File;
 import java.util.List;

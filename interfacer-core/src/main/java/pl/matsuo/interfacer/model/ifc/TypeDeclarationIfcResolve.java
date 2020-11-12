@@ -14,9 +14,9 @@ import java.util.List;
 import java.util.Map;
 
 import static java.lang.String.join;
-import static pl.matsuo.interfacer.util.CollectionUtil.filterMap;
-import static pl.matsuo.interfacer.util.CollectionUtil.map;
-import static pl.matsuo.interfacer.util.CollectionUtil.toMap;
+import static pl.matsuo.core.util.collection.CollectionUtil.filterMap;
+import static pl.matsuo.core.util.collection.CollectionUtil.map;
+import static pl.matsuo.core.util.collection.CollectionUtil.toMap;
 
 @ToString
 @RequiredArgsConstructor

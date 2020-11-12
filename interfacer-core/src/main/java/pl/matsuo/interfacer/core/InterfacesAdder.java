@@ -8,8 +8,8 @@ import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.github.javaparser.utils.SourceRoot;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import pl.matsuo.core.util.collection.Pair;
 import pl.matsuo.interfacer.model.ifc.IfcResolve;
-import pl.matsuo.interfacer.util.Pair;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -21,10 +21,10 @@ import java.util.Map;
 
 import static java.util.Collections.emptyList;
 import static java.util.Comparator.comparing;
-import static pl.matsuo.interfacer.util.CollectionUtil.anyMatch;
-import static pl.matsuo.interfacer.util.CollectionUtil.filterMap;
-import static pl.matsuo.interfacer.util.CollectionUtil.flatMap;
-import static pl.matsuo.interfacer.util.Pair.pair;
+import static pl.matsuo.core.util.collection.CollectionUtil.anyMatch;
+import static pl.matsuo.core.util.collection.CollectionUtil.filterMap;
+import static pl.matsuo.core.util.collection.CollectionUtil.flatMap;
+import static pl.matsuo.core.util.collection.Pair.pair;
 
 @Slf4j
 public class InterfacesAdder {

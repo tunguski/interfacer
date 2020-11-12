@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.Map;
 
 import static com.github.javaparser.symbolsolver.reflectionmodel.ReflectionFactory.typeDeclarationFor;
-import static pl.matsuo.interfacer.util.CollectionUtil.map;
+import static pl.matsuo.core.util.collection.CollectionUtil.map;
 
 @Slf4j
 @RequiredArgsConstructor

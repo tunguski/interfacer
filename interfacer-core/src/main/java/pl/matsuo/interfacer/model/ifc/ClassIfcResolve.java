@@ -18,8 +18,8 @@ import java.util.Map;
 import static com.github.javaparser.symbolsolver.reflectionmodel.ReflectionFactory.typeDeclarationFor;
 import static java.lang.String.join;
 import static java.util.Arrays.asList;
-import static pl.matsuo.interfacer.util.CollectionUtil.map;
-import static pl.matsuo.interfacer.util.CollectionUtil.toMap;
+import static pl.matsuo.core.util.collection.CollectionUtil.map;
+import static pl.matsuo.core.util.collection.CollectionUtil.toMap;
 
 @ToString
 @RequiredArgsConstructor

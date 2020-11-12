@@ -7,10 +7,11 @@ import pl.matsuo.interfacer.model.tv.TypeVariableReference;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static pl.matsuo.interfacer.util.CollectionUtil.filterMap;
-import static pl.matsuo.interfacer.util.CollectionUtil.firstNotNull;
+import static pl.matsuo.core.util.collection.CollectionUtil.filterMap;
+import static pl.matsuo.core.util.collection.CollectionUtil.getFirst;
 
 public abstract class AbstractIfcResolve implements IfcResolve {
 
@@ -54,9 +55,11 @@ public abstract class AbstractIfcResolve implements IfcResolve {
       ClassOrInterfaceDeclaration declaration,
       Map<String, TypeVariableReference> typeVariables,
       MethodReference method) {
-    return firstNotNull(
-        declaration.getMethodsByName(method.getName()),
-        methodDeclaration -> method.matches(methodDeclaration, typeVariables));
+    return getFirst(
+        filterMap(
+            declaration.getMethodsByName(method.getName()),
+            methodDeclaration -> method.matches(methodDeclaration, typeVariables)),
+        Objects::nonNull);
   }
 
   protected abstract Map<String, TypeVariableReference> typeVariables();
