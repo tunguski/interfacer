@@ -18,7 +18,7 @@ class InterfacerPluginFunctionalTest extends Specification {
         buildFile << """
             plugins {
                 id 'java-library'
-                id 'pl.matsuo.interfacer'
+                id 'com.github.tunguski'
             }
             
             repositories {
