@@ -1,22 +1,21 @@
 package pl.matsuo.interfacer.model.ifc;
 
+import static java.lang.String.join;
+import static pl.matsuo.core.util.collection.CollectionUtil.filterMap;
+import static pl.matsuo.core.util.collection.CollectionUtil.map;
+import static pl.matsuo.core.util.collection.CollectionUtil.toMap;
+
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.type.TypeParameter;
 import com.github.javaparser.resolution.declarations.ResolvedReferenceTypeDeclaration;
+import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 import pl.matsuo.interfacer.model.ref.MethodReference;
 import pl.matsuo.interfacer.model.ref.MethodUsageReference;
 import pl.matsuo.interfacer.model.tv.TypeVariableReference;
-
-import java.util.List;
-import java.util.Map;
-
-import static java.lang.String.join;
-import static pl.matsuo.core.util.collection.CollectionUtil.filterMap;
-import static pl.matsuo.core.util.collection.CollectionUtil.map;
-import static pl.matsuo.core.util.collection.CollectionUtil.toMap;
 
 @ToString
 @RequiredArgsConstructor

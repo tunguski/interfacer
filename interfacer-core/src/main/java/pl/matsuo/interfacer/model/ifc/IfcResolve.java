@@ -2,10 +2,9 @@ package pl.matsuo.interfacer.model.ifc;
 
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.resolution.declarations.ResolvedReferenceTypeDeclaration;
-import pl.matsuo.interfacer.model.ref.MethodReference;
-
 import java.util.List;
 import java.util.Map;
+import pl.matsuo.interfacer.model.ref.MethodReference;
 
 public interface IfcResolve {
 

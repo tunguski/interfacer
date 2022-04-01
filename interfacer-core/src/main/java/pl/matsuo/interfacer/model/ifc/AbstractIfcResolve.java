@@ -1,17 +1,16 @@
 package pl.matsuo.interfacer.model.ifc;
 
-import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
-import pl.matsuo.interfacer.model.ref.MethodReference;
-import pl.matsuo.interfacer.model.tv.TypeVariableReference;
+import static pl.matsuo.core.util.collection.CollectionUtil.filterMap;
+import static pl.matsuo.core.util.collection.CollectionUtil.getFirst;
 
+import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import static pl.matsuo.core.util.collection.CollectionUtil.filterMap;
-import static pl.matsuo.core.util.collection.CollectionUtil.getFirst;
+import pl.matsuo.interfacer.model.ref.MethodReference;
+import pl.matsuo.interfacer.model.tv.TypeVariableReference;
 
 public abstract class AbstractIfcResolve implements IfcResolve {
 

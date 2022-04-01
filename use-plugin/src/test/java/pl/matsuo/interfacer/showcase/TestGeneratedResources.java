@@ -1,5 +1,8 @@
 package pl.matsuo.interfacer.showcase;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 import org.junit.Test;
 import pl.matsuo.interfacer.avro.BasicKeyValue;
 import pl.matsuo.interfacer.avro.GenericDate;
@@ -8,9 +11,6 @@ import pl.matsuo.interfacer.avro.GenericString;
 import pl.matsuo.interfacer.avro.KeyValueReference;
 import pl.matsuo.interfacer.avro.NamedRecord;
 import pl.matsuo.interfacer.avro.NoInterfacesObject;
-
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 
 public class TestGeneratedResources {
 

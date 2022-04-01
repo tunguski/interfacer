@@ -1,16 +1,18 @@
 package pl.matsuo.interfacer.core;
 
+import static java.util.Collections.emptyList;
+import static java.util.Comparator.comparing;
+import static pl.matsuo.core.util.collection.CollectionUtil.anyMatch;
+import static pl.matsuo.core.util.collection.CollectionUtil.filterMap;
+import static pl.matsuo.core.util.collection.CollectionUtil.flatMap;
+import static pl.matsuo.core.util.collection.Pair.pair;
+
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ParseResult;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.github.javaparser.utils.SourceRoot;
-import lombok.NonNull;
-import lombok.extern.slf4j.Slf4j;
-import pl.matsuo.core.util.collection.Pair;
-import pl.matsuo.interfacer.model.ifc.IfcResolve;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -18,13 +20,10 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-
-import static java.util.Collections.emptyList;
-import static java.util.Comparator.comparing;
-import static pl.matsuo.core.util.collection.CollectionUtil.anyMatch;
-import static pl.matsuo.core.util.collection.CollectionUtil.filterMap;
-import static pl.matsuo.core.util.collection.CollectionUtil.flatMap;
-import static pl.matsuo.core.util.collection.Pair.pair;
+import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
+import pl.matsuo.core.util.collection.Pair;
+import pl.matsuo.interfacer.model.ifc.IfcResolve;
 
 @Slf4j
 public class InterfacesAdder {

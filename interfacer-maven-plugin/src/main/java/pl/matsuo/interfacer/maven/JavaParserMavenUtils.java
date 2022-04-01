@@ -1,8 +1,7 @@
 package pl.matsuo.interfacer.maven;
 
-import org.apache.maven.plugin.logging.Log;
-
 import java.util.function.Supplier;
+import org.apache.maven.plugin.logging.Log;
 
 /** Things to make JavaParser and Maven interact better */
 public class JavaParserMavenUtils {

@@ -1,8 +1,16 @@
 package pl.matsuo.interfacer.core;
 
+import static java.util.Arrays.asList;
+import static java.util.Collections.emptyList;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+
 import com.github.javaparser.ParseResult;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
+import java.io.File;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
 import pl.matsuo.core.util.collection.Pair;
@@ -10,15 +18,6 @@ import pl.matsuo.interfacer.model.ifc.IfcResolve;
 import pl.matsuo.interfacer.showcase.GenericInterface;
 import pl.matsuo.interfacer.showcase.HasName;
 import pl.matsuo.interfacer.showcase.MutableOwner;
-
-import java.io.File;
-import java.util.List;
-
-import static java.util.Arrays.asList;
-import static java.util.Collections.emptyList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
 
 @Slf4j
 public class TestInterfacesAdder {

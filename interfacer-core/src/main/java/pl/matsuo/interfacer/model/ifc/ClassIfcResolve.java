@@ -1,25 +1,24 @@
 package pl.matsuo.interfacer.model.ifc;
 
+import static com.github.javaparser.symbolsolver.reflectionmodel.ReflectionFactory.typeDeclarationFor;
+import static java.lang.String.join;
+import static java.util.Arrays.asList;
+import static pl.matsuo.core.util.collection.CollectionUtil.map;
+import static pl.matsuo.core.util.collection.CollectionUtil.toMap;
+
 import com.github.javaparser.resolution.declarations.ResolvedReferenceTypeDeclaration;
 import com.github.javaparser.symbolsolver.model.resolution.TypeSolver;
+import java.lang.reflect.Method;
+import java.lang.reflect.TypeVariable;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import pl.matsuo.interfacer.model.ref.MethodReference;
 import pl.matsuo.interfacer.model.ref.ReflectionMethodReference;
 import pl.matsuo.interfacer.model.tv.TypeVariableReference;
-
-import java.lang.reflect.Method;
-import java.lang.reflect.TypeVariable;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
-import static com.github.javaparser.symbolsolver.reflectionmodel.ReflectionFactory.typeDeclarationFor;
-import static java.lang.String.join;
-import static java.util.Arrays.asList;
-import static pl.matsuo.core.util.collection.CollectionUtil.map;
-import static pl.matsuo.core.util.collection.CollectionUtil.toMap;
 
 @ToString
 @RequiredArgsConstructor

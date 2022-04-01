@@ -1,6 +1,15 @@
 package pl.matsuo.interfacer.core;
 
+import static java.util.Collections.emptyList;
+import static pl.matsuo.core.util.collection.CollectionUtil.filterMap;
+import static pl.matsuo.core.util.collection.CollectionUtil.map;
+
 import com.github.javaparser.symbolsolver.model.resolution.TypeSolver;
+import java.io.File;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.reflections.Reflections;
 import org.reflections.scanners.SubTypesScanner;
@@ -9,16 +18,6 @@ import org.reflections.util.ConfigurationBuilder;
 import org.reflections.util.FilterBuilder;
 import pl.matsuo.interfacer.model.ifc.ClassIfcResolve;
 import pl.matsuo.interfacer.model.ifc.IfcResolve;
-
-import java.io.File;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLClassLoader;
-import java.util.List;
-
-import static java.util.Collections.emptyList;
-import static pl.matsuo.core.util.collection.CollectionUtil.filterMap;
-import static pl.matsuo.core.util.collection.CollectionUtil.map;
 
 /** Implements scanning classpath for interfaces that should be used during interface adding. */
 @Slf4j
@@ -55,12 +54,17 @@ public class ClasspathInterfacesScanner {
 
   /** Create {@link Reflections} scanner. */
   public Reflections createReflections(ClassLoader classLoader, String[] interfacePackages) {
+    FilterBuilder filterBuilder = new FilterBuilder();
+    for (String interfacePackage : interfacePackages) {
+      filterBuilder = filterBuilder.includePackage(interfacePackage);
+    }
+
     return new Reflections(
         new ConfigurationBuilder()
-            .addClassLoader(classLoader)
+            .addClassLoaders(classLoader)
             .setUrls(ClasspathHelper.forClassLoader(classLoader))
             .setScanners(new SubTypesScanner(false))
-            .filterInputsBy(new FilterBuilder().includePackage(interfacePackages)));
+            .filterInputsBy(filterBuilder));
   }
 
   /** Create classloader based on <code>compileClasspathElements</code> urls. */

@@ -6,10 +6,9 @@ import com.github.javaparser.symbolsolver.JavaSymbolSolver;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.ClassLoaderTypeSolver;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.CombinedTypeSolver;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.JavaParserTypeSolver;
-import lombok.NonNull;
-
 import java.io.File;
 import java.util.List;
+import lombok.NonNull;
 
 /** Data transfer object containing objects used for parsing. */
 public class ParsingContext {

@@ -1,15 +1,14 @@
 package pl.matsuo.interfacer.model.ref;
 
+import static java.util.Collections.emptyMap;
+
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.resolution.MethodUsage;
 import com.github.javaparser.resolution.types.ResolvedType;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import pl.matsuo.interfacer.model.tv.TypeVariableReference;
-
-import java.util.Map;
-
-import static java.util.Collections.emptyMap;
 
 @Slf4j
 @RequiredArgsConstructor

@@ -1,9 +1,8 @@
 package pl.matsuo.interfacer.model.ref;
 
 import com.github.javaparser.ast.body.MethodDeclaration;
-import pl.matsuo.interfacer.model.tv.TypeVariableReference;
-
 import java.util.Map;
+import pl.matsuo.interfacer.model.tv.TypeVariableReference;
 
 public interface MethodReference {
 

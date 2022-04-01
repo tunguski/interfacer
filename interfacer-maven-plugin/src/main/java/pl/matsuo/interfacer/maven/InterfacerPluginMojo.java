@@ -1,5 +1,6 @@
 package pl.matsuo.interfacer.maven;
 
+import java.io.File;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
@@ -9,8 +10,6 @@ import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
 import pl.matsuo.interfacer.core.InterfacesAdder;
 
-import java.io.File;
-
 /**
  * This plugin is a sample for building your own plugins. It takes a directory of source code and
  * adds a trace line to each method.
@@ -18,7 +17,8 @@ import java.io.File;
 @Mojo(
     name = "add-interfaces",
     defaultPhase = LifecyclePhase.PROCESS_SOURCES,
-    requiresDependencyResolution = ResolutionScope.RUNTIME)
+    requiresDependencyResolution = ResolutionScope.RUNTIME,
+    threadSafe = true)
 public class InterfacerPluginMojo extends AbstractMojo {
 
   /** Package aggregating interfaces that should be scanned through entities. */
