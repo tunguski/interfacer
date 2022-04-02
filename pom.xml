@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>pl.matsuo.interfacer</groupId>
   <artifactId>interfacer-parent</artifactId>
-  <version>0.0.7</version>
+  <version>0.0.8-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>Interfacer Maven Plugin</name>
@@ -42,7 +42,7 @@
   <scm>
     <connection>scm:git:git@github.com:tunguski/interfacer.git</connection>
     <developerConnection>scm:git:git@github.com:tunguski/interfacer.git</developerConnection>
-    <tag>interfacer-parent-0.0.7</tag>
+    <tag>master</tag>
     <url>git@github.com:tunguski/interfacer.git</url>
   </scm>
 
