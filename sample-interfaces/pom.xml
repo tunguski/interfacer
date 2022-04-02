@@ -5,8 +5,8 @@
   <parent>
     <groupId>pl.matsuo.interfacer</groupId>
     <artifactId>interfacer-parent</artifactId>
-    <version>0.0.7-SNAPSHOT</version>
+    <version>0.0.7</version>
   </parent>
   <artifactId>sample-interfaces</artifactId>
-  <version>0.0.7-SNAPSHOT</version>
+  <version>0.0.7</version>
 </project>
