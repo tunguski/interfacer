@@ -6,7 +6,7 @@ plugins {
     id 'maven-publish'
 }
 
-group = 'com.github.tunguski'
+group = 'io.github.tunguski'
 version = '0.0.7'
 
 idea {
@@ -31,7 +31,7 @@ dependencies {
 gradlePlugin {
     plugins {
         interfacer {
-            id = 'com.github.tunguski'
+            id = 'io.github.tunguski.interfacer'
             implementationClass = 'pl.matsuo.interfacer.gradle.InterfacerPlugin'
         }
     }
