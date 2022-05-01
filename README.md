@@ -65,16 +65,39 @@ public class Company implements HasName {
 
 ## Maven Usage
 
-```
+```xml
 <plugin>
     <groupId>pl.matsuo.interfacer</groupId>
     <artifactId>interfacer-maven-plugin</artifactId>
-    <version>0.0.6</version>
+    <version>0.0.7</version>
     <executions>
         <execution>
             <configuration>
+
+                <!--
+                     Use interfaces that are found in this directory. Plugin
+                     assumes this is source directory, so it should contain
+                     .java files for interfaces we want to add to classes.
+                -->
                 <interfacesDirectory>${project.basedir}/src/main/java</interfacesDirectory>
+
+                <!--
+                     Use interfaces that are found on the plugin's classpath
+                     under specified package.
+                -->
                 <interfacePackage>pl.matsuo.interfacer.showcase</interfacePackage>
+
+                <!--
+                     Default: ${project.build.directory}/generated-sources/avro
+
+                     Process classes found in this. Plugin assumes it
+                     contains .java files. Classes defined in these files will
+                     be parsed. If some class matches one of the interfaces
+                     defined in interfaces sources, this interface will be added
+                     and target .java file will be modified.
+                -->
+                <scanDirectory>${project.build.directory}/generated-sources/avro</scanDirectory>
+
             </configuration>
             <goals>
                 <goal>add-interfaces</goal>
@@ -86,7 +109,7 @@ public class Company implements HasName {
 
 ## Gradle Usage
 
-```
+```groovy
 plugins {
     id 'pl.matsuo.interfacer'
 }
@@ -102,7 +125,7 @@ interfacer {
 
 **Maven**
 
-```
+```sh
 mvn clean
 mvn -P release release:prepare
 mvn -P release release:perform
@@ -110,7 +133,7 @@ mvn -P release release:perform
 
 **Gradle**
 
-```
+```sh
 cd interfacer-gradle-plugin/
 ./gradlew publishPlugins
 ```
