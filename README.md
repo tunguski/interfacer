@@ -111,7 +111,7 @@ public class Company implements HasName {
 
 ```groovy
 plugins {
-    id 'pl.matsuo.interfacer'
+    id 'io.github.tunguski.interfacer'
 }
 
 interfacer {
